@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name "monkeys")(type "KiCad")(uri "${KIPRJMOD}/monkeys.pretty")(options "")(descr ""))
+  (lib (name "JTFooties")(type "KiCad")(uri "C:/Archives/Libraries/JTFooties.pretty")(options "")(descr ""))
+)
