@@ -5,16 +5,16 @@
       "Application": "Pcbnew",
       "Version": "(6.0.5)"
     },
-    "CreationDate": "2022-11-12T14:57:53-08:00"
+    "CreationDate": "2023-07-25T21:33:44-07:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "Monkeys",
       "GUID": "4d6f6e6b-6579-4732-9e6b-696361645f70",
-      "Revision": "2.2"
+      "Revision": "3.0"
     },
     "Size": {
-      "X": 145.01,
+      "X": 145.0,
       "Y": 59.88
     },
     "LayerNumber": 2,
@@ -100,24 +100,29 @@
     },
     {
       "Type": "SolderMask",
+      "Thickness": 0.01,
       "Name": "Top Solder Mask"
     },
     {
       "Type": "Copper",
+      "Thickness": 0.035,
       "Name": "F.Cu"
     },
     {
       "Type": "Dielectric",
+      "Thickness": 1.51,
       "Material": "FR4",
       "Name": "F.Cu/B.Cu",
       "Notes": "Type: dielectric layer 1 (from F.Cu to B.Cu)"
     },
     {
       "Type": "Copper",
+      "Thickness": 0.035,
       "Name": "B.Cu"
     },
     {
       "Type": "SolderMask",
+      "Thickness": 0.01,
       "Name": "Bottom Solder Mask"
     },
     {
