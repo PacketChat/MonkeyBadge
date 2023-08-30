@@ -2,7 +2,7 @@
   "board": {
     "active_layer": 31,
     "active_layer_preset": "",
-    "auto_track_width": false,
+    "auto_track_width": true,
     "hidden_nets": [],
     "high_contrast_mode": 0,
     "net_color_mode": 1,
@@ -61,8 +61,8 @@
       34,
       35
     ],
-    "visible_layers": "903bc10_ffffffff",
-    "zone_display_mode": 0
+    "visible_layers": "903fcdc_ffffffff",
+    "zone_display_mode": 1
   },
   "meta": {
     "filename": "Monkeys.kicad_prl",
