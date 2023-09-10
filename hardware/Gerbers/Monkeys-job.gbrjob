@@ -5,13 +5,13 @@
       "Application": "Pcbnew",
       "Version": "(6.0.5)"
     },
-    "CreationDate": "2023-09-09T17:34:35-07:00"
+    "CreationDate": "2023-09-14T14:32:31-07:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "Monkeys",
       "GUID": "4d6f6e6b-6579-4732-9e6b-696361645f70",
-      "Revision": "3.5"
+      "Revision": "3.7"
     },
     "Size": {
       "X": 145.0,
@@ -24,8 +24,8 @@
   "DesignRules": [
     {
       "Layers": "Outer",
-      "PadToPad": 0.0,
-      "PadToTrack": 0.0,
+      "PadToPad": 0.148,
+      "PadToTrack": 0.148,
       "TrackToTrack": 0.2,
       "MinLineWidth": 0.2,
       "TrackToRegion": 0.508,
