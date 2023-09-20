@@ -89,7 +89,7 @@ while True:
     # Debugging:
     print("Received Signal:", decoded_signal)
     if decoded_signal[0] == 1000:
-        # Set NeoPixels to red:
+        # Set NeoPixels to cyan:
         for i in range(NUM_PIXELS):
             neopixel.set_color(i, (0, 180, 180))
 
