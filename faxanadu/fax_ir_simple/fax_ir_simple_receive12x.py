@@ -19,7 +19,10 @@ ZERO_SPACE = 280
 ir_receiver = machine.Pin(IR_RECEIVER_PIN, machine.Pin.IN)
 
 def measure_pulse():
-    """Measure the duration of a pulse (time the signal is low)"""
+    """
+    Measure the duration of a pulse (time the signal is low)
+    Returns the duration of the pulse in microseconds.
+    """
     start_time = utime.ticks_us()
     while ir_receiver.value() == 0:
         pass
@@ -27,7 +30,10 @@ def measure_pulse():
     return utime.ticks_diff(end_time, start_time)
 
 def measure_space():
-    """Measure the duration of space (time the signal is high)"""
+    """
+    Measure the duration of space (time the signal is high)
+    Returns the duration of the space in microseconds.
+    """
     start_time = utime.ticks_us()
     while ir_receiver.value() == 1:
         pass
@@ -35,10 +41,17 @@ def measure_space():
     return utime.ticks_diff(end_time, start_time)
 
 def is_approximate(value, target, tolerance=TOLERANCE):
-    """Check if the value is within the range defined by tolerance"""
+    """
+    Check if the value is within the range defined by tolerance.
+    Returns True if the value is within the tolerance range, False otherwise.
+    """
     return target - tolerance <= value <= target + tolerance
 
 def decode_ir():
+    """
+    Decode the IR signal and return the decoded data as a list of bits (0s and
+    1s). Returns None if the signal cannot be decoded.
+    """
     data = []
 
     # Check for preamble
