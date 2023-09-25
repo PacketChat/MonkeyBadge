@@ -1,19 +1,21 @@
 import machine
 import utime
 
-# Define the GPIO pin connected to the output of the IR receiver
+# Define the GPIO pin connected to the output of the IR receiver:
 IR_RECEIVER_PIN = 19
 
-# Tolerances for the timings
-TOLERANCE = 150
+# Tolerances for the timings:
+TOLERANCE = 170
 
-# Define pulse and space timings
+# Define pulse and space timings:
 PREAMBLE_PULSE = 9000
 PREAMBLE_SPACE = 4500
 ONE_PULSE = 560
 ONE_SPACE = 560
 ZERO_PULSE = 560
 ZERO_SPACE = 280
+END_PULSE = 2750 # Only used by the sending program, leaving here to reference.
+END_SPACE = 2750 # Only used by the sending program, leaving here to reference.
 
 # Initialize the pin
 ir_receiver = machine.Pin(IR_RECEIVER_PIN, machine.Pin.IN)
@@ -54,39 +56,41 @@ def decode_ir():
     """
     data = []
 
-    # Check for preamble
+    # Check for preamble:
     if not (is_approximate(measure_pulse(), PREAMBLE_PULSE) and is_approximate(measure_space(), PREAMBLE_SPACE)):
         return None
 
-    # Wait for the end of preamble
+    # Wait for the end of preamble:
     while not is_approximate(measure_space(), PREAMBLE_SPACE):
         pass
 
-    # Read the subsequent data bits
+    # Read the subsequent data bits:
     while True:
         pulse_duration = measure_pulse()
         space_duration = measure_space()
 
-        # Decode a '1'
+        # Decode a '1':
         if (is_approximate(pulse_duration, ONE_PULSE) and
             is_approximate(space_duration, ONE_SPACE)):
             data.append(1)
-        # Decode a '0'
+        # Decode a '0':
         elif (is_approximate(pulse_duration, ZERO_PULSE) and
               is_approximate(space_duration, ZERO_SPACE)):
             data.append(0)
         else:
-            # End of data or unrecognized pattern
+            # End of data or unrecognized pattern:
             break
 
     return data
 
 if __name__ == "__main__":
     while True:
-        if ir_receiver.value() == 0:  # If a pulse is detected
+        if ir_receiver.value() == 0:  # If a pulse is detected.
             decoded_data = decode_ir()
+
             if decoded_data is not None:
                 print(decoded_data)
-            # Short pause to avoid re-triggering on the same signal
+
+            # Short pause to avoid re-triggering on the same signal:
             utime.sleep_ms(10)
 
