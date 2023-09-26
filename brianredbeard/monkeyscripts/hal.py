@@ -11,6 +11,8 @@ import oled
 import neopixel
 import si470x
 import static
+from ir_tx.nec import NEC as NECTx
+from ir_rx.nec import NEC_16 as NECRx
 
 # Color constants & intensity function stolen from the MIT licensed
 # CircuitPython library `adafruit_led_animation.color` by Kattni Rembor
@@ -287,11 +289,11 @@ class Badge(object):
         FM_RST=16,
         IR_TX=17,
         NEOPX=18,
+        IR_RX=19,
         SAO2_GP1=19,
         I2C0_SDA=21,
         I2C0_SCL=22,
         I2C1_SCL=23,
-        IR_RX=25,
         SAO1_GP2=27,
         ROUT=34,
         LOUT=35,
@@ -306,13 +308,13 @@ class Badge(object):
         self.BTN_DOWN = Pin(BTN_DOWN, Pin.IN, Pin.PULL_UP)
         self.BTN_ENTER = Pin(BTN_ENTER, Pin.IN, Pin.PULL_UP)
         self.FM_RST = Pin(FM_RST, Pin.OUT, Pin.PULL_UP)
-        self.IR_TX = Pin(IR_TX, Pin.OUT)
+        self.IR_TX = NECTx(Pin(IR_TX, Pin.OUT))
         self.NEOPX = neopixel.NeoPixel(Pin(NEOPX), NEOPX_COUNT)
         self.SAO2_GP1 = SAO2_GP1
         self.I2C0_SDA = I2C0_SDA
         self.I2C0_SCL = I2C0_SCL
         self.I2C1_SCL = I2C1_SCL
-        self.IR_RX = IR_RX
+        self.IR_RX = NECRx(Pin(IR_RX, Pin.IN), self.ir_callback)
         self.SAO1_GP2 = Pin(SAO1_GP2, Pin.OUT)
         self.ROUT = ROUT
         self.LOUT = LOUT
@@ -323,6 +325,12 @@ class Badge(object):
             print("ERROR: Unable to enumerate OLED display on I2C bus: ", self.I2C1)
         self.FM = si470x.SI470X()
         self.baudrate = 115200
+
+    def ir_callback(self, data, addr, ctrl):
+        if data < 0:  # NEC protocol sends repeat codes.
+            print('Repeat code.')
+        else:
+            print('Data {:02x} Addr {:04x}'.format(data, addr))
 
     def getID(self):
         try:
