@@ -1,0 +1,4 @@
+fastapi[all]
+hrid
+coredis 
+requests
