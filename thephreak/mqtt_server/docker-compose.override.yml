@@ -1,0 +1,8 @@
+services:
+  mosquitto:
+    build:
+      args:
+        GID: 20
+        UID: 501
+        USER: unicorn
+    user: 501:20
