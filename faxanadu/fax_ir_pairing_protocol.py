@@ -5,6 +5,10 @@ import binascii
 from ir_tx.nec import NEC as NECTx
 from ir_rx.nec import NEC_16 as NECRx
 
+#
+# This doesn't work, was just stubbed out as an example of where we could go.
+#
+
 # Constants:
 TX_PIN = 17
 RX_PIN = 19
