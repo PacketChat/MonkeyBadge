@@ -5,10 +5,10 @@ import re
 
 import config  # Import the config file
 
-from lib import wifi
-from lib import menu
-from lib.button import ButtonHandler
-from lib import gameclient
+from modules import wifi
+from modules import menu
+from modules.button import ButtonHandler
+from modules import gameclient
 
 def display_mainmenu(display):
     display.clear()
