@@ -6,6 +6,10 @@ import btree
 
 class MonkeyBadge:
     def __init__(self, uuid):
+        """
+        Initalize the MonkeyBadge class - this class is used to interact with the MonkeyBadge server API
+        :param uuid: The UUID of the badge
+        """
         self.badge_uuid = uuid
         self.registration_key = config.REG_KEY
         # db initialize
@@ -17,20 +21,26 @@ class MonkeyBadge:
 
         # check DB for an handle, IR ID, and an API token
 
-        if self.db[b'handle']: self.handle = self.db[b'handle'].decode() 
-        else: self.handle = ""
-
-        if self.db[b'apitoken']: self.handle = self.db[b'apitoken'].decode() 
-        else: self.apitoken = ""
-        
+        #if self.db[b'handle']: self.handle = self.db[b'handle'].decode() 
+        #else: self.handle = ""
+        self.handle = ""
+        #if self.db[b'apitoken']: self.handle = self.db[b'apitoken'].decode() 
+        #else: self.apitoken = ""
+        self.apitoken = ""
         self.IR_ID = ""
 
     def _save_to_db(self, kvs):
+        """
+        Save key/value pairs to the btree database
+        """
         for key in kvs:
             self.db[key] = kvs[key]
         self.db.flush()
 
     def register(self):
+        """
+        Register the badge with the MonkeyBadge server API
+        """
         print("[Method]: checkin")
         baseurl = config.API_SERVER
 
@@ -52,11 +62,14 @@ class MonkeyBadge:
         if 'UUID' in json_data and r.status_code == 200:
             print("badge registered")
             self.apitoken = json_data['token']
-            self._save_to_db("{\"token\": \"%s\"}" % (self.apitoken))
+            # self._save_to_db("{\"token\": \"%s\"}" % (self.apitoken))
         else:
             print("badge not registered.")
 
     async def checkin(self):
+        """
+        Checkin with the MonkeyBadge server API
+        """
         while True:
             try:
                 print("[Method]: checkin")
