@@ -42,39 +42,37 @@ class DisplayHandler:
             self.display.text(line, 0, i * 11, 1)
         self.display.show()
 
-class Menu:
-    def __init__(self, name, items, parent=None):
+class MenuItem:
+    def __init__(self, name, action=None, submenu=None):
         self.name = name
+        self.action = action
+        self.submenu = submenu
+
+class Menu:
+    def __init__(self, items, display_handler, parent=None):
         self.items = items
+        self.selected = 0
+        self.display_handler = display_handler
         self.parent = parent
-        self.selected_index = 0
 
-    def next_item(self):
-        self.selected_index += 1
-        if self.selected_index >= len(self.items):
-            self.selected_index = 0
+    def move_up(self):
+        self.selected = (self.selected - 1) % len(self.items)
+        self.update_display()
 
-    def prev_item(self):
-        self.selected_index -= 1
-        if self.selected_index < 0:
-            self.selected_index = len(self.items) - 1
+    def move_down(self):
+        self.selected = (self.selected + 1) % len(self.items)
+        self.update_display()
 
     def select(self):
-        item = self.items[self.selected_index]
-        if isinstance(item, Menu):
-            return item
+        item = self.items[self.selected]
+        if item.submenu:
+            return item.submenu
+        elif item.action:
+            item.action()
+            return self
         else:
-            # handle action or other types of menu items
-            pass
-        return self
+            return None
 
-    def back(self):
-        return self.parent if self.parent else self
-
-    def display(self, displayhandler):
-        displayhandler.clear()
-        result = []
-        for i, item in enumerate(self.items):
-            prefix = ">" if i == self.selected_index else " "
-            result.append(f"{prefix}{item.name}")
-        displayhandler.print_text(result)
+    def update_display(self):
+        lines = ["> " + item.name if i == self.selected else "  " + item.name for i, item in enumerate(self.items)]
+        self.display_handler.print_text(lines)
