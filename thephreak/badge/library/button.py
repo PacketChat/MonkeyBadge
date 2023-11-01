@@ -3,7 +3,16 @@ import uasyncio as asyncio
 import utime
 
 class ButtonHandler:
+    """
+    ButtonHandler class
+    """
     def __init__(self, button_pins, debounce_time=250):
+        """
+        ButtonHandler initializer function
+        
+        :param button_pins: List of button pins
+        :param debounce_time: Debounce time in milliseconds
+        """
         self.button_pins = button_pins
         self.buttons = [machine.Pin(pin, machine.Pin.IN, machine.Pin.PULL_UP) for pin in button_pins]
         self.last_pressed = [0] * len(button_pins)

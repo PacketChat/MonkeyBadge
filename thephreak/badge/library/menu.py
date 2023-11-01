@@ -1,78 +1,75 @@
-from machine import Pin, SoftI2C
-import ssd1306
-import uasyncio as asyncio
-from library.button import ButtonHandler
-
-class DisplayHandler:
-    """
-    A class for controlling an OLED display using the SSD1306 driver. The goal
-    here is to display six lines of text, tried seven, but that fell off the
-    bottom of the screen at that size.
-    """
-
-    def __init__(self, width, height, sda_pin, scl_pin):
-        """
-        Initialize the SSD1306 driver for controlling an OLED display.
-
-        Args:
-            width (int): Width of the display in pixels.
-            height (int): Height of the display in pixels.
-            sda_pin (int): Pin number for the SDA (data) line of the I2C bus.
-            scl_pin (int): Pin number for the SCL (clock) line of the I2C bus.
-        """
-        self.i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin))
-        self.display = ssd1306.SSD1306_I2C(width, height, self.i2c)
-
-    def clear(self):
-        """
-        Clear the display by filling it with black pixels.
-        """
-        self.display.fill(0)
-        self.display.show()
-
-    def print_text(self, lines):
-        """
-        Display text on the OLED screen.
-
-        Args:
-            list of strings, we only print the first 6 elements of the list.
-        """
-        self.clear()
-        for i, line in enumerate(lines):
-            self.display.text(line, 0, i * 11, 1)
-        self.display.show()
-
 class MenuItem:
     def __init__(self, name, action=None, submenu=None):
+        """
+        :param name: Name of the menu item
+        :param action: Function to execute when the item is selected
+        :param submenu: Menu to display when a sub menu item is selected
+        """
         self.name = name
         self.action = action
         self.submenu = submenu
 
+    def execute(self):
+        if self.submenu:
+            return self.submenu
+        if self.action:
+            eval(self.action)
+        return None
+
 class Menu:
-    def __init__(self, items, display_handler, parent=None):
-        self.items = items
+    def __init__(self, items, display_handler, title="Menu", parent=None):
+        """
+        Menu initializer function
+
+        :param items: List of menu items
+        :param display_handler: DisplayHandler object
+        :param title: Menu title
+        :param parent: Parent menu
+        """
+        self.items = items + [MenuItem("Back")] if parent else items
         self.selected = 0
         self.display_handler = display_handler
         self.parent = parent
+        self.title = title
+        self.top_index = 0  # Index of the top item displayed
 
     def move_up(self):
-        self.selected = (self.selected - 1) % len(self.items)
+        """
+        Move the selection up one item        
+        """
+        if self.selected > 0:
+            self.selected -= 1
+            if self.selected < self.top_index:
+                self.top_index = self.selected
         self.update_display()
 
     def move_down(self):
-        self.selected = (self.selected + 1) % len(self.items)
+        """
+        Move the selection down one item
+        """
+        if self.selected < len(self.items) - 1:
+            self.selected += 1
+            if self.selected >= self.top_index + 5:
+                self.top_index = self.selected - 4
         self.update_display()
 
     def select(self):
+        """
+        Select the current item
+        """
         item = self.items[self.selected]
-        if item.submenu:
-            return item.submenu
-        elif item.action:
-            item.action()
-            return self
-        else:
-            return None
+        if item.name == "Back":
+            return self.parent
+        return item.execute()
 
     def update_display(self):
-        lines = ["> " + item.name if i == self.selected else "  " + item.name for i, item in enumerate(self.items)]
+        """
+        Update the display with the current menu
+        """
+        lines = [self.title]
+        display_range = self.items[self.top_index:self.top_index + 5]
+        for i, item in enumerate(display_range):
+            display_line = "* " + item.name if self.top_index + i == self.selected else "  " + item.name
+            lines.append(display_line)
         self.display_handler.print_text(lines)
+
