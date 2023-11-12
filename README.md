@@ -1,13 +1,15 @@
-# rsc
-Random Source Code
+# Monkey Badge
 
-This is a collection of random source code used throughout the Packet Chat
-project.  
+## badge
+micropython code that runs on the badge.
 
-If you would like to store code here, create a new directory with your username
-and put your code in there.
+## api-server
+The api-server is the backend gameserver it provides an API interface for the badge to save state and complete challenges.
 
+You will need a redis server with the json mod, `docker run -d -p 6379:6379 redislabs/redismod` works fine.
 
-<!--
-vim: ts=2 sw=2 et tw=80:
--->
+This is based on FastAPI and is easily executed with: `cd api-server; python3 api-server`
+
+## scoreboard
+
+Built with Flask

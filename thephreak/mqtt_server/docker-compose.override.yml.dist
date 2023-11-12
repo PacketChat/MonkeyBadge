@@ -1,8 +1,0 @@
-services:
-  mosquitto:
-    build:
-      args:
-        GID: [GID]
-        UID: [UID]
-        USER: [USER]
-    user: [UID]:[GID]
