@@ -64,10 +64,10 @@ class DisplayHandler:
         fb = framebuf.FrameBuffer(bytearray(b), 60, 60, framebuf.MONO_HLSB)
 
         self.display.fill(0)
-        self.display.blit(fb, 34, 0)
+        self.display.blit(fb, 34, 2)
         self.display.show()
 
-    def print_text(self, lines):
+    def print_lines(self, lines):
         """
         Display text on the OLED screen.
 

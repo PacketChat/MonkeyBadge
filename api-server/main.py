@@ -6,6 +6,7 @@ from keystore import ApiKeyStore
 from pydantic import BaseModel
 import coredis
 import json
+import os
 
 import uvicorn
 
@@ -32,21 +33,20 @@ shadesuuid = "aa0b8824-53d0-4c46-8c08-ad75baf9d1d5"
 
 templateJSON = """
 {
-    "badgeHandle": "thephreak",
+    "badgeHandle": "",
     "current_challenge": "intro",
-    "last_seen": "2014-06-25T00:00:00.000Z",
-    "match_mode": false,
+    "IR_ID": "",
     "token": "",
     "intro": {
-        "intro_enabled": false,
-        "intro_complete": false
+        "enabled": 0,
+        "complete": 0
     },
     "challenge1": {
-        "complete": false,
+        "complete": 0,
         "matches": []
     },
     "challenge2": {
-        "complete": "false",
+        "complete": 0,
         "interact_uber1": "",
         "interact_uber2": "",
         "interact_uber3": "",
@@ -54,22 +54,35 @@ templateJSON = """
         "interact_uber5": ""
     },
     "challenge3": {
-        "complete": false,
+        "complete": 0,
         "interact_cans": "",
         "interact_mic": "",
         "interact_shades": ""
     },
-    "antisocial_monkey_club": "false",
+    "antisocial_monkey_club": 0,
     "battles": {
-        "won": "0",
-        "lost": "0",
-        "level": "1"
+        "won": 0,
+        "lost": 0,
+        "level": 1
     }
 }
 """
+
+def check_intro_started():
+    """
+    Check if the intro challenge has been started by looking for the existance of a drop file
+    """
+    if os.path.exists("intro_started"):
+        return True
+    else:
+        return False
+
 api_key_header = APIKeyHeader(name="X-API-Key")
 
 client = coredis.Redis(host='127.0.0.1', port=6379)
+
+class Admin(BaseModel):
+    key: str
 
 class Match(BaseModel):
     targetUUID: str
@@ -210,6 +223,8 @@ async def checkIn(r: Checkin, api_key: str = Security(get_api_key)):
     if j['token'] != api_key:
           raise HTTPException(status_code=400, detail="API Key mismatch")
     else:
+        if check_intro_started() == True:
+            j['intro']['enabled'] = 1
         return j
 
 
@@ -305,6 +320,15 @@ async def match(badge_id, r: Match):
                     return f"{targetBadge} not in match mode"
             else:
                 return f"{badge_id} not in match mode"
+
+@app.post("/start_the_intro")
+async def startintro(r: Admin):
+    if r.key == "ADMINSONLY":
+        f = open("intro_started", "w")
+        f.write("intro started")
+        f.close()
+        return "intro started"
+    pass
 
 @app.post("/deletebadge")
 async def deletebadge(r: Register):

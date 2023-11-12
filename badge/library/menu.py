@@ -1,5 +1,5 @@
 class MenuItem:
-    def __init__(self, name, action=None, submenu=None):
+    def __init__(self, name, action=None, submenu=None, dynamic_text=None):
         """
         :param name: Name of the menu item
         :param action: Function to execute when the item is selected
@@ -8,16 +8,24 @@ class MenuItem:
         self.name = name
         self.action = action
         self.submenu = submenu
+        self.dynamic_text = dynamic_text
 
     def execute(self):
         if self.submenu:
             return self.submenu
         if self.action:
-            eval(self.action)
+            result = self.action()
+            if result is not None:
+                return result
         return None
+    
+    def get_display_text(self):
+        if self.dynamic_text:
+            return self.dynamic_text()
+        return self.name
 
 class Menu:
-    def __init__(self, items, display_handler, title="Menu", parent=None):
+    def __init__(self, items, title="Menu", parent=None):
         """
         Menu initializer function
 
@@ -28,7 +36,6 @@ class Menu:
         """
         self.items = items + [MenuItem("Back")] if parent else items
         self.selected = 0
-        self.display_handler = display_handler
         self.parent = parent
         self.title = title
         self.top_index = 0  # Index of the top item displayed
@@ -41,7 +48,7 @@ class Menu:
             self.selected -= 1
             if self.selected < self.top_index:
                 self.top_index = self.selected
-        self.update_display()
+                print(f"{self.title}: {self.top_index}")
 
     def move_down(self):
         """
@@ -49,9 +56,9 @@ class Menu:
         """
         if self.selected < len(self.items) - 1:
             self.selected += 1
-            if self.selected >= self.top_index + 5:
-                self.top_index = self.selected - 4
-        self.update_display()
+            if self.selected >= self.top_index + 4:
+                self.top_index = self.selected - 3
+                print(f"{self.title}: {self.top_index}")
 
     def select(self):
         """
@@ -61,15 +68,4 @@ class Menu:
         if item.name == "Back":
             return self.parent
         return item.execute()
-
-    def update_display(self):
-        """
-        Update the display with the current menu
-        """
-        lines = [self.title]
-        display_range = self.items[self.top_index:self.top_index + 5]
-        for i, item in enumerate(display_range):
-            display_line = "* " + item.name if self.top_index + i == self.selected else "  " + item.name
-            lines.append(display_line)
-        self.display_handler.print_text(lines)
 

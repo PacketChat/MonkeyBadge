@@ -1,4 +1,5 @@
 """configuration settings"""
+from collections import namedtuple
 
 # Wifi Config
 WIFI_SSID = "WillHouse6"
@@ -28,3 +29,29 @@ IR_TX_PIN = 17  # SAO2 GPIO2
 # SAO1 Pins
 SAO1_GPIO1 = 25
 SAO1_GPIO2 = 27
+
+
+# IR Definitions Follow
+# examples (addr, data):
+# DISCOVER: (0x000a, 0x01)
+# HERE: (0x000b, 0x02)  <--- add to last seen
+# INIT_PAIR: (0x000a, 0x03)
+# RESP_PAIR: (0x000b, 0x04, 0x00, 0x0a) <--- responding to 0x000a
+# ACK_RESP: (0x000a, 0x05, 0x00, 0x0b) <--- confirming 0x000b response
+# EMOTE: (0x000a, 0x06, 0x01, 0x00, 0x0b) <--- a wants be to show emote 0x01 (lol)
+# EMOTE: (0x000b, 0x06, 0x02, 0xff, 0xff) <--- b wants all badges in the vicinity
+#                                              to show emote 0x02 (lmao)
+Opcode = namedtuple('Opcode', ['code', 'additional_bytes'])
+IR_OPCODES = {
+        'DISCOVER': Opcode(1, 0),
+        'HERE': Opcode(2, 0),
+        'INIT_PAIR': Opcode(3, 0),
+        'RESP_PAIR': Opcode(4, 2),
+        'ACK_RESP': Opcode(5, 2),
+        'EMOTE': Opcode(6, 3),
+}
+#REV_IR_OPCODES = {val.code: key for key, val in OPCODES.items()}
+
+IR_TX_DELAY = 115  # delay between tx pulses in ms
+# messages received after this much delay (in ms) become a new message
+IR_RX_MAX_DELAY = 250

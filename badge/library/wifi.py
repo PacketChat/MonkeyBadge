@@ -1,6 +1,7 @@
 import network
 import ubinascii
 import uasyncio as asyncio
+import utime  # MicroPython module for time functions
 
 class WiFiManager:
     def __init__(self, ssid, password):
@@ -22,10 +23,19 @@ class WiFiManager:
         if not self.wlan.isconnected():
             print('Connecting to network...')
             self.wlan.connect(self.ssid, self.password)
-            while not self.wlan.isconnected():
-                await asyncio.sleep(1)  # non-blocking wait for 1 second
-        print('Network config:', self.wlan.ifconfig())
 
+            # Timeout implementation
+            timeout = 10  # Timeout in seconds
+            start_time = utime.time()  # Get the current time in seconds
+
+            while not self.wlan.isconnected():
+                await asyncio.sleep(.1)  # non-blocking wait
+                if utime.time() - start_time > timeout:
+                    print("Failed to connect to WiFi within the timeout period.")
+                    return False  # Indicate failure
+        print('Network config:', self.wlan.ifconfig())
+        return True
+    
     async def get_status(self):
         """
         Get the status of the WiFi connection
@@ -47,3 +57,11 @@ class WiFiManager:
         :return: The MAC address of the WiFi interface
         """
         return ubinascii.hexlify(self.wlan.config('mac'),':').decode()
+
+    def get_wifi_strength(self):
+        """
+        Get the WiFi signal strength
+
+        :return: The WiFi signal strength
+        """
+        return int(self.wlan.status('rssi'))
