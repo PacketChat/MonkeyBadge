@@ -48,7 +48,7 @@ def random_motd():
         "Customize your player handle via CLI with badgecli!",
         "hackers gonna hack",
         "I'm in ur badge, hacking ur stuff",
-        "Monkey See, Monkey Hack"
+        "Monkey See, Monkey Hack",
         "Hack the Planet!",
         "Hushcon - Now with more /<-r4d!",
         "ir 1337 h4x0r",
