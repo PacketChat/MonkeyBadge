@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Scoreboard</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background-image: url('../static/monkey-hack-background.png');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                height: 100vh;
+                font-family: Arial, sans-serif;
+                color: #00FFCC;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 90%;
+                max-width: 800px;
+                margin-top: 20px;
+                padding: 10px;
+            }
+            .header h1 {
+                font-size: 60px;
+                margin-left: 20px;
+            }
+            .scoreboard {
+                width: 90%;
+                background-color: rgba(0, 0, 0, 0.7);
+                border-radius: 10px;
+                padding: 20px;
+                text-align: center;
+                position: relative;
+            }
+            .scoreboard .row {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                align-items: center;
+            }
+            .scoreboard .row:first-child {
+                border-top: none;
+            }
+            .scoreboard .rank {
+                flex: 1;
+            }
+            .scoreboard .value0 {
+                flex: 1;
+            }
+            .scoreboard .value1 {
+                flex: 2;
+            }
+            .scoreboard .value2 {
+                flex: 2;
+            }
+            .scoreboard .value3 {
+                flex: 2;
+            }
+            .scoreboard .value4 {
+                flex: 2;
+            }
+            .scoreboard .value5 {
+                flex: 2;
+            }
+            .scoreboard_header {
+                background-color: rgba(128, 0, 128, 0.15);
+                width: 99%;
+            }
+            .scoreboard_title {
+                max-width: 50%;
+                opacity: 0.9;
+                margin-right: 10px;
+                padding: 0 0 15px 0;
+            }
+            .logo {
+                max-width: 50%;
+                padding: 0 0 15px 0;
+            }
+            .magenta {
+                color: #D0248F;
+            }
+            .mic {
+                height: 32px;
+            }
+            .kans {
+                height: 32px;
+            }
+            .shade {
+                height: 32px;
+            }
+            @media screen and (max-width: 600px) {
+                .scoreboard_title {
+                    display: none;
+                }
+                .logo {
+                    display: block;
+                    margin: 0 auto;
+                }
+                .scoreboard .title::after {
+                    content: "Scoreboard";
+                    color: #D0248F;
+                }
+            }
+            @media screen and (min-width: 601px) {
+                .logo {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <!-- Header content goes here if needed. -->
+        </div>
+        <div class="scoreboard">
+            <!-- Table header. -->
+            <div class="title">
+                <div class="image_row">
+                    <img src="{{ url_for('static', filename='logo-small.png') }}" alt="Logo" class="logo">
+                    <img src="{{ url_for('static', filename='logo-with-title.png') }}" alt="Scoreboard Title" class="scoreboard_title">
+                </div>
+            </div>
+            <div class="row scoreboard_header">
+                <div class="value0 magenta">Rank</div>
+                <div class="value1 magenta">Player</div>
+                <div class="value2 magenta">MiC</div>
+                <div class="value3 magenta">Kans</div>
+                <div class="value4 magenta">Shade</div>
+                <div class="value5 magenta">Matches</div>
+            </div>
+            <!-- Table rows (populated from the data). -->
+            {% for record in data %}
+            {% if record.intro == 1 %}
+            <div class="row">
+                <div class="value0" score="{{record.score}}"> {{ loop.index }} </div>
+                <div class="value1">{{ record.handle }}</div>
+                <div class="value2">{% if record.challenge1 == 1 %} <img src="{{ url_for('static', filename='MiC_cyan.png') }}" alt="MiC" class="mic">{% endif %} </div>
+                <div class="value3">{% if record.challenge2 == 1 %} <img src="{{ url_for('static', filename='Kans_magenta.png') }}" alt="Kans" class="kans">{% endif %}</div> 
+                <div class="value4">{% if record.challenge3 == 1 %} <img src="{{ url_for('static', filename='Shade_purple.png') }}" alt="Shade" class="shade">{% endif %}</div>
+                <div class="value5">{{ record.matches }}</div>
+            </div>
+            {% endif %} 
+            {% endfor %}
+        </div>
+    </body>
+</html>

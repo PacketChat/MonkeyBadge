@@ -2,6 +2,9 @@ from machine import Pin
 import micropython
 
 import urequests as requests
+import usocket as socket
+import ussl as ssl
+
 import ujson as json
 import uasyncio as asyncio
 
@@ -41,8 +44,7 @@ class MonkeyBadge:
         # boot 
         print("Badge Booting")
         self.display.print_logo()
-        self.leds.do_rainbow_cycle(speed=1)
- 
+        self.leds.do_rainbow_cycle(speed=1) 
         # IR init
         #NECRx(Pin(config.IR_RX_PIN, Pin.IN), self._schedule_ir_input)
 
@@ -372,7 +374,7 @@ class MonkeyBadge:
 
         # Setup WiFi
         await self.wifi_manager.connect()
-
+        
         print (f"Radio tuned to {self.radio.getFreq()}")
 
         # Setup button handler              

@@ -2,6 +2,7 @@ import machine
 import neopixel
 import time
 import random
+import uasyncio as asyncio
 
 # Utility Functions:
 def scale_color(rgb, brightness_factor):
