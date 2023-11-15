@@ -72,7 +72,7 @@ class IR:
             except BadMessage:
                 # unknown opcode
                 return
-        except OverDelay, BadMessage:
+        except (OverDelay, BadMessage):
             # treat this as a new message
             del self.partials[addr]
             self.recv(addr, data)
