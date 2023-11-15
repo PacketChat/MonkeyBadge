@@ -1,5 +1,6 @@
 import coredis
 from flask import Flask, render_template
+import random
 
 app = Flask(__name__)
 
@@ -42,11 +43,23 @@ async def get_redis_data():
 
     return sorted_list
 
+def random_motd():
+    messages = [
+        "Customize your player handle via CLI with badgecli!",
+        "hackers gonna hack",
+        "I'm in ur badge, hacking ur stuff",
+        "Monkey See, Monkey Hack"
+        "Hack the Planet!",
+        "Hushcon - Now with more /<-r4d!",
+        "ir 1337 h4x0r",
+    ]
+    return random.choice(messages)
+
 @app.route('/')
 async def index():
     data_dict = await get_redis_data()
-
-    return render_template('scoreboard.html', data=data_dict)
+    motd = random_motd()
+    return render_template('scoreboard.html', data=data_dict, motd=motd)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
