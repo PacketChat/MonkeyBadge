@@ -17,30 +17,30 @@ async def get_redis_data():
         print(key)
         if not key == b"badge_apikeys":
             data = await jr.json.get(key)
-            try:
-                matches = len(data['challenge1']['matches'])
-            except:
-                matches = 0
-            # compute the rank
-            score = 0
-            if data['challenge1']['complete'] == 1:
-                score += 1000
-            if data['challenge2']['complete'] == 1:
-                score += 2000
-            if data['challenge3']['complete'] == 1:
-                score += 3000
-            score += matches
-            d = {
-                "handle": data['badgeHandle'],
-                "score": score,
-                "intro": data['intro']['complete'],
-                "challenge1": data['challenge1']['complete'],
-                "challenge2": data['challenge2']['complete'],
-                "challenge3": data['challenge3']['complete'],
-                "matches": matches
-            }
-            print(d)
-            result.append(d)
+            if data['intro']['complete'] == 1:
+                try:
+                    matches = len(data['challenge1']['matches'])
+                except:
+                    matches = 0
+                # compute the rank
+                score = 0
+                if data['challenge1']['complete'] == 1:
+                    score += 1000
+                if data['challenge2']['complete'] == 1:
+                    score += 2000
+                if data['challenge3']['complete'] == 1:
+                    score += 3000
+                score += matches
+                d = {
+                    "handle": data['badgeHandle'],
+                    "score": score,
+                    "challenge1": data['challenge1']['complete'],
+                    "challenge2": data['challenge2']['complete'],
+                    "challenge3": data['challenge3']['complete'],
+                    "matches": matches
+                }
+                print(d)
+                result.append(d)
     sorted_list = sorted(result, key=lambda x: x['score'], reverse=True)
 
     return sorted_list
