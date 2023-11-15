@@ -2,6 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="60" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Scoreboard</title>
         <style>
@@ -139,7 +140,6 @@
             </div>
             <!-- Table rows (populated from the data). -->
             {% for record in data %}
-            {% if record.intro == 1 %}
             <div class="row">
                 <div class="value0" score="{{record.score}}"> {{ loop.index }} </div>
                 <div class="value1">{{ record.handle }}</div>
@@ -148,7 +148,6 @@
                 <div class="value4">{% if record.challenge3 == 1 %} <img src="{{ url_for('static', filename='Shade_purple.png') }}" alt="Shade" class="shade">{% endif %}</div>
                 <div class="value5">{{ record.matches }}</div>
             </div>
-            {% endif %} 
             {% endfor %}
         </div>
     </body>
