@@ -3,11 +3,6 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
-# TODO: refactor out redis, only use coredis.
-
-# Establish a connection to the Redis server
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
-
 async def get_redis_data():
 
     try: 
@@ -54,4 +49,4 @@ async def index():
     return render_template('scoreboard.html', data=data_dict)
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True, port=8080)

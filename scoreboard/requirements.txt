@@ -1,3 +1,2 @@
 flask[async]
 coredis
-redis
