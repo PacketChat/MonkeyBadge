@@ -37,14 +37,16 @@ class MonkeyBadge:
 
         # Display Init
         self.display = DisplayHandler(config.OLED_WIDTH, config.OLED_HEIGHT, config.OLED_SDA_PIN, config.OLED_SCL_PIN)
-    
+
         # Led init
         self.leds = LEDHandler()
-        
-        # boot 
+
+        # boot
         print("Badge Booting")
         self.display.print_logo()
-        self.leds.do_rainbow_cycle(speed=1) 
+        #self.leds.do_rainbow_cycle(speed=1)
+        self.leds.do_boot_sequence()
+
         # IR init
         #NECRx(Pin(config.IR_RX_PIN, Pin.IN), self._schedule_ir_input)
 
@@ -54,7 +56,7 @@ class MonkeyBadge:
 
         # Need to pull these from the db store.
         self.apitoken = self.db.get("token")
-        self.lock_radio_station = False 
+        self.lock_radio_station = False
 
         self.handle = ""
         self.IR_ID = ""
@@ -98,7 +100,7 @@ class MonkeyBadge:
         self.ir_menu.items.extend([
             MenuItem("Send Message", "pass"),
             MenuItem("Receive Message", "pass")
-        ])  
+        ])
         self.radio_menu.items.extend([
             MenuItem("Frequency", self.donothing, dynamic_text=self.display_freq),
             MenuItem("Seek Up", self.menu_seek_up),
@@ -155,7 +157,7 @@ class MonkeyBadge:
 
     def display_vol(self):
         return f"Volume: {self.radio.volume}"
-        
+
     def donothing(self):
         return self.current_menu
 
@@ -175,14 +177,14 @@ class MonkeyBadge:
             self.current_menu = self.current_menu.parent
 
     def toggle_mute(self):
-        if self.radio.muted: 
+        if self.radio.muted:
             self.radio.unmute()
-        else: 
+        else:
             self.radio.mute()
 
     def _build_display_header(self):
         """ build the header, limited to 16 characters (oled width)"""
-        
+
         # ir enabled?
         if self.current_menu: menu = self.current_menu
         else: menu = ""
@@ -195,7 +197,7 @@ class MonkeyBadge:
         if self.wifi_manager.isWifiConnected():
             if self.wifi_manager.get_wifi_strength() >= -45: wifistatus =  ".  "
             elif self.wifi_manager.get_wifi_strength() >= -65: wifistatus = ".o "
-            else: wifistatus = ".oO" 
+            else: wifistatus = ".oO"
         else: wifistatus = " ? "
 
         if self.ir_enabled == True: ir = "I"
@@ -206,13 +208,13 @@ class MonkeyBadge:
         elif len(menu.title) < 10: blanks = " " * (10 - len(menu.title))
         header = f"{menu.title}{blanks}{wifistatus} {mute}{ir}"
         return header
-    
+
     def _build_display_footer(self, message=""):
         if message == "":
             return message * 16
         else:
             return message
-    
+
     def _update_display(self, show_footer=True):
         """
         Update the display with the current menu
@@ -237,9 +239,9 @@ class MonkeyBadge:
             return 4 lines of menu content
             """
             content = []
-            
+
             display_range = self.current_menu.items[self.current_menu.top_index:self.current_menu.top_index + 4]
-            
+
             for i, item in enumerate(display_range):
                 display_line = "* " + item.get_display_text() if self.current_menu.top_index + i == self.current_menu.selected else "  " + item.get_display_text()
                 content.append(display_line)
@@ -301,7 +303,7 @@ class MonkeyBadge:
         else:
             self.db.set("state", json.dumps(new_state))
             print("wrote gamestate to localdb")
-  
+
     async def load_gamestate(self):
         if self.apitoken:
             while True:
@@ -320,7 +322,7 @@ class MonkeyBadge:
                 else:
                     print("No state to load")
                 print(f"{self.intro}")
-                if self.current_challenge == "intro" and self.intro['enabled'] == 1 and self.intro['complete'] == 0: 
+                if self.current_challenge == "intro" and self.intro['enabled'] == 1 and self.intro['complete'] == 0:
                     print("Konami code goes here")
 
                 await asyncio.sleep(65)  # non-blocking wait for 1 minute
@@ -374,10 +376,10 @@ class MonkeyBadge:
 
         # Setup WiFi
         await self.wifi_manager.connect()
-        
+
         print (f"Radio tuned to {self.radio.getFreq()}")
 
-        # Setup button handler              
+        # Setup button handler
         self.button_handler = ButtonHandler(config.BUTTON_PINS)
         self.button_handler.set_callback(self._button_callback)
 

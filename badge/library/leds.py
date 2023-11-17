@@ -43,7 +43,8 @@ class LEDHandler:
         """
         Initialize the light show with a NeoPixel light. This is where you set the brightness level for the light show.
         """
-        self.np_light = NeoPixelLight(18, 7, brightness=0.025)
+        #self.np_light = NeoPixelLight(18, 7, brightness=0.025)
+        self.np_light = NeoPixelLight(18, 7, brightness=0.8)
 
     def do_all_off(self):
         """Turn off all LEDs."""
@@ -606,9 +607,119 @@ class LEDHandler:
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
+    def do_predator_countdown(self, duration_s=10):
+        """
+        Simulates the countdown timer effect from the movie Predator.
+
+        Parameters:
+        :param duration_s: Total duration of the countdown effect in seconds.
+        """
+
+        # Groupings for the LEDs: First 2, next 2, last 3.
+        groups = [[0, 1], [2, 3], [4, 5, 6]]
+
+        # Each group will have an equal share of the total duration:
+        delay_per_group = duration_s / len(groups)
+
+        dim_red = (50, 0, 0)  # Dim red color for LEDs that are about to turn off.
+        bright_red = (255, 0, 0)  # Bright red color for active LEDs.
+
+        # Initialize all LEDs to bright red:
+        for led in range(7):
+            self.np_light.set_color(led, bright_red)
+
+        # Iterate through the LED groups:
+        for group in groups:
+            # Blink the current group LEDs back and forth for a bit:
+            end_time_group = time.ticks_ms() + delay_per_group * 1000
+            while time.ticks_ms() < end_time_group:
+
+                # Alternate a limited number of times (3 in this case):
+                for _ in range(3):
+                    for led in group:
+                        self.np_light.set_color(led, dim_red)
+                        time.sleep_ms(500)
+                        self.np_light.set_color(led, bright_red)
+                        time.sleep_ms(500)
+
+                # For the last group of 3 LEDs, turn them off one at a time:
+                if group == [4, 5, 6]:
+                    for led in reversed(group):
+                        self.np_light.set_color(led, (0, 0, 0))
+                        time.sleep_ms(500)
+                # For the other groups, turn off the LEDs in order:
+                else:
+                    for led in group:
+                        self.np_light.set_color(led, (0, 0, 0))
+                        time.sleep_ms(500)
+
+    def do_boot_sequence(self):
+        """
+        Simulates a boot sequence with a warm swell effect followed by rapid blinking.
+        Each group of LEDs will swell from off to full brightness and back, then blink.
+        The first two groups stay on in a dimmed state, and the third group pauses at the dim level before turning off.
+        """
+
+        groups = [[0, 1], [2, 3], [4, 5, 6]]
+        # Purple, Magenta, Cyan:
+        colors = [(87, 8, 255), (255, 0, 255), (0, 100, 100)]
+        swell_steps = 20  # Number of steps for swelling up and down.
+        blink_count = 2   # Number of blinks.
+        post_swell_delay = 1337  # Time in ms to wait after the last swell.
+
+        # Function for a warm swell effect
+        def swell(group, color, final_intensity=1.0):
+            # Swell up
+            for step in range(swell_steps):
+                intensity = step / swell_steps
+                adjusted_color = (int(color[0] * intensity), int(color[1] * intensity), int(color[2] * intensity))
+                for led in group:
+                    self.np_light.set_color(led, adjusted_color)
+                time.sleep_ms(50)
+
+            # Swell down
+            for step in range(swell_steps, 0, -1):
+                intensity = step / swell_steps
+                adjusted_color = (int(color[0] * intensity), int(color[1] * intensity), int(color[2] * intensity))
+                for led in group:
+                    self.np_light.set_color(led, adjusted_color)
+                time.sleep_ms(50)
+
+            # Set to final intensity
+            dim_color = (int(color[0] * final_intensity), int(color[1] * final_intensity), int(color[2] * final_intensity))
+            for led in group:
+                self.np_light.set_color(led, dim_color)
+
+        # Function for blinking
+        def blink(group, color):
+            for _ in range(blink_count):
+                for led in group:
+                    self.np_light.set_color(led, color)  # On.
+                time.sleep_ms(100)
+                for led in group:
+                    self.np_light.set_color(led, (0, 0, 0))  # Off.
+                time.sleep_ms(100)
+
+        # Perform the sequence for each group
+        for index, (group, color) in enumerate(zip(groups, colors)):
+            swell(group, color)  # Warm swell effect.
+            blink(group, color)  # Blinking effect.
+            swell(group, color, final_intensity=0.2)  # Warm swell effect again with dimming.
+
+            # For the last group, pause at the dim level before turning off:
+            if index == len(groups) - 1:
+                time.sleep_ms(post_swell_delay)
+
+        # Ensure all LEDs are turned off at the end:
+        self.do_all_off()
+
     def do_demo(self):
+        print('do_boot_sequence starting...')
+        self.do_boot_sequence()
         print('do_countdown_timer starting...')
         self.do_countdown_timer(7)
+        print('do_predator_countdown starting...')
+        self.do_predator_countdown()
         print('do_monkey_spaz Shade starting...')
         self.do_monkey_spaz("shade", [0, 1], (0, 100, 100))
         print('do_monkey_spaz Kans starting...')
