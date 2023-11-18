@@ -26,10 +26,14 @@ class NeoPixelLight:
         self.np = neopixel.NeoPixel(machine.Pin(pin), num_pixels)
         self.brightness = brightness
 
-    def set_color(self, index, color):
+    def set(self, index, color):
         """Set the color of the pixel at the specified index."""
         scaled_color = scale_color(color, self.brightness)
         self.np[index] = scaled_color
+
+    def set_color(self, index, color):
+        """Set the color of the pixel using _set() and write."""
+        self.set(index, color)
         self.np.write()
 
     def clear(self):
@@ -38,12 +42,15 @@ class NeoPixelLight:
             self.np[i] = (0, 0, 0)
         self.np.write()
 
+    def fill(self, color):
+        self.np.fill(scale_color(color, self.brightness))
+        self.np.write()
+
 class LEDHandler:
     def __init__(self):
         """
         Initialize the light show with a NeoPixel light. This is where you set the brightness level for the light show.
         """
-        #self.np_light = NeoPixelLight(18, 7, brightness=0.025)
         self.np_light = NeoPixelLight(18, 7, brightness=0.8)
 
     def do_all_off(self):
@@ -625,8 +632,7 @@ class LEDHandler:
         bright_red = (255, 0, 0)  # Bright red color for active LEDs.
 
         # Initialize all LEDs to bright red:
-        for led in range(7):
-            self.np_light.set_color(led, bright_red)
+        self.np_light.fill(bright_red)
 
         # Iterate through the LED groups:
         for group in groups:
