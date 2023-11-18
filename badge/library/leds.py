@@ -26,6 +26,12 @@ class NeoPixelLight:
         self.np = neopixel.NeoPixel(machine.Pin(pin), num_pixels)
         self.brightness = brightness
 
+    def clear(self):
+        """Clear all pixels, turning them off."""
+        for i in range(7):
+            self.np[i] = (0, 0, 0)
+        self.np.write()
+
     def set(self, index, color):
         """Set the color of the pixel at the specified index."""
         scaled_color = scale_color(color, self.brightness)
@@ -34,12 +40,6 @@ class NeoPixelLight:
     def set_color(self, index, color):
         """Set the color of the pixel using _set() and write."""
         self.set(index, color)
-        self.np.write()
-
-    def clear(self):
-        """Clear all pixels, turning them off."""
-        for i in range(7):
-            self.np[i] = (0, 0, 0)
         self.np.write()
 
     def fill(self, color):
@@ -233,77 +233,74 @@ class LEDHandler:
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_heartbeat(self, color=(255, 0, 0), beats_per_minute=60):
-        """
-        Simulate a heartbeat pulse with the given color.
-
-        Parameters:
-        :param color: Color tuple (R, G, B).
-        :param beats_per_minute: Heartbeat speed.
-        """
-
-        # Calculate the duration of one full heartbeat pulse (both on and off)
-        # based on BPM:
-        pulse_duration = 60 / beats_per_minute
-
-        # Illuminate all LEDs with the specified color to simulate the "beat"
-        # of the heart:
-        for i in range(7):
-            self.np_light.set_color(i, color)
-
-        # Sleep for half the pulse duration (time the heartbeat is "on"):
-        time.sleep_ms(int(pulse_duration * 500))
-
-        # Turn off all LEDs to complete the heartbeat pulse:
-        self.do_all_off()
-
-        # Sleep for the remaining half of the pulse duration (time the
-        # heartbeat is "off"):
+    def do_heartbeat(self, color=(255, 0, 0), beats_per_minute=60):             
+        """                                                                     
+        Simulate a heartbeat pulse with the given color.                        
+                                                                                
+        Parameters:                                                             
+        :param color: Color tuple (R, G, B).                                    
+        :param beats_per_minute: Heartbeat speed.                               
+        """                                                                     
+                                                                                
+        # Calculate the duration of one full heartbeat pulse (both on and off)  
+        # based on BPM:                                                         
+        pulse_duration = 60 / beats_per_minute                                  
+                                                                                
+        # Illuminate all LEDs with the specified color to simulate the "beat"   
+        # of the heart:                                                         
+        self.np_light.fill(color)                                               
+                                                                                
+        # Sleep for half the pulse duration (time the heartbeat is "on"):       
+        time.sleep_ms(int(pulse_duration * 500))                                
+                                                                                
+        # Turn off all LEDs to complete the heartbeat pulse:                    
+        self.do_all_off()                                                       
+                                                                                
+        # Sleep for the remaining half of the pulse duration (time the          
+        # heartbeat is "off"):                                                  
         time.sleep_ms(int(pulse_duration * 500))
 
     def do_double_heartbeat(self, color=(255, 0, 0), beats_per_minute=60, pause_between_beats_ms=500):
-        """
-        Simulate a double heartbeat pulse with a quick second beat.
-
-        Parameters:
-        :param color: Color tuple (R, G, B) for the heartbeat.
-        :param beats_per_minute: Heartbeat speed.
-        :param pause_between_beats_ms: Time to pause between the first and
-        second beats in milliseconds.
-        """
-
-        # Calculate the duration of one full heartbeat pulse (both on and off)
-        # based on BPM:
-        pulse_duration = 60 / beats_per_minute
-
-        # First Heartbeat:
-        # Illuminate all LEDs with the specified color to simulate the "beat"
-        # of the heart:
-        for i in range(7):
-            self.np_light.set_color(i, color)
-
-        # Sleep for half the pulse duration (time the heartbeat is "on"):
-        time.sleep_ms(int(pulse_duration * 500))
-
-        # Turn off all LEDs to complete the heartbeat pulse:
-        self.do_all_off()
-
-        # Sleep for the specified pause time between beats:
-        time.sleep_ms(pause_between_beats_ms)
-
-        # Second Heartbeat (Quick Beat):
-        # Illuminate all LEDs with the specified color to simulate the "beat"
-        # of the heart:
-        for i in range(7):
-            self.np_light.set_color(i, color)
-
-        # Sleep for a shorter duration for the quick second beat:
-        time.sleep_ms(int(pulse_duration * 250))
-
-        # Turn off all LEDs to complete the second heartbeat pulse:
-        self.do_all_off()
-
-        # Sleep for the remaining half of the first heartbeat pulse duration:
+        """                                                                     
+        Simulate a double heartbeat pulse with a quick second beat.             
+                                                                                
+        Parameters:                                                             
+        :param color: Color tuple (R, G, B) for the heartbeat.                  
+        :param beats_per_minute: Heartbeat speed.                               
+        :param pause_between_beats_ms: Time to pause between the first and      
+        second beats in milliseconds.                                           
+        """                                                                     
+                                                                                
+        # Calculate the duration of one full heartbeat pulse (both on and off)  
+        # based on BPM:                                                         
+        pulse_duration = 60 / beats_per_minute                                  
+                                                                                
+        # First Heartbeat:                                                      
+        # Illuminate all LEDs with the specified color to simulate the "beat"   
+        # of the heart:                                                         
+        self.np_light.fill(color)                                               
+                                                                                
+        # Sleep for half the pulse duration (time the heartbeat is "on"):       
+        time.sleep_ms(int(pulse_duration * 500))                                
+                                                                                
+        # Turn off all LEDs to complete the heartbeat pulse:                    
+        self.do_all_off()                                                       
+                                                                                
+        # Sleep for the specified pause time between beats:                     
+        time.sleep_ms(pause_between_beats_ms)                                   
+                                                                                
+        # Second Heartbeat (Quick Beat):                                        
+        # Illuminate all LEDs with the specified color to simulate the "beat"   
+        # of the heart:                                                         
+        self.np_light.fill(color)                                               
+                                                                                
+        # Sleep for a shorter duration for the quick second beat:               
+        time.sleep_ms(int(pulse_duration * 250))                                
+                                                                                
+        # Turn off all LEDs to complete the second heartbeat pulse:             
+        self.do_all_off()                                                       
+                                                                                
+        # Sleep for the remaining half of the first heartbeat pulse duration:   
         time.sleep_ms(int(pulse_duration * 250))
 
     def do_chaser(self, color=(255, 0, 0), duration_s=10):
@@ -516,64 +513,64 @@ class LEDHandler:
         self.do_all_off()
 
     def do_monkey_roll_call(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
-        """
-        Runs a monkey-themed roll call show with cycling colored groups.
-
-        Parameters:
-        :param duration_s: Total duration of the show.
-        :param min_delay_ms: Minimum delay between roll call bursts.
-        :param max_delay_ms: Maximum delay between roll call bursts.
-        """
-        end_time = time.ticks_ms() + duration_s * 1000
-        groups = [
-            ([0, 1], (0, 100, 100)),  # Group 1 (Cyan) for NeoPixels 1 and 2.
+        """                                                                     
+        Runs a monkey-themed roll call show with cycling colored groups.        
+                                                                                
+        Parameters:                                                             
+        :param duration_s: Total duration of the show.                          
+        :param min_delay_ms: Minimum delay between roll call bursts.            
+        :param max_delay_ms: Maximum delay between roll call bursts.            
+        """                                                                     
+        end_time = time.ticks_ms() + duration_s * 1000                          
+        groups = [                                                              
+            ([0, 1], (87, 8, 255)),  # Group 1 (Purple) for NeoPixels 1 and 2.  
             ([2, 3], (255, 0, 255)),  # Group 2 (Magenta) for NeoPixels 3 and 4.
-            ([4, 5, 6], (87, 8, 255)) # Group 3 (Purple) for NeoPixels 5, 6, and 7.
-        ]
-
-        group_index = 0  # Starting with the first group.
-
-        while time.ticks_ms() < end_time:
-            # Monkey group are ordered to Shades (cyan), Canz (magenta) and
-            # Mic (purple):
-            group_indices, group_color = groups[group_index]
-
-            # Simulate a roll call burst for the LEDs in the chosen group:
-            for index in group_indices:
-                self.do_firework_burst(index, group_color)
-
-            # Delay for a random duration before the next burst:
-            time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
-
-            # Move to the next group and wrap around if needed:
+            ([4, 5, 6], (0, 100, 100)) # Group 3 (Cyan) for NeoPixels 5, 6, and 7.
+        ]                                                                       
+                                                                                
+        group_index = 0  # Starting with the first group.                       
+                                                                                
+        while time.ticks_ms() < end_time:                                       
+            # Monkey group are ordered to Shade (purple), Kans (magenta) and    
+            # MiC (cyan):                                                       
+            group_indices, group_color = groups[group_index]                    
+                                                                                
+            # Simulate a roll call burst for the LEDs in the chosen group:      
+            for index in group_indices:                                         
+                self.do_firework_burst(index, group_color)                      
+                                                                                
+            # Delay for a random duration before the next burst:                
+            time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))           
+                                                                                
+            # Move to the next group and wrap around if needed:                 
             group_index = (group_index + 1) % len(groups)
 
     def do_random_monkey_spaz(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
-        """
-        Runs a random order of the monkey-themed roll call show with colored
-        groups.
-
-        Parameters:
-        :param duration_s: Total duration of the show.
-        :param min_delay_ms: Minimum delay between roll call bursts.
-        :param max_delay_ms: Maximum delay between roll call bursts.
-        """
-        end_time = time.ticks_ms() + duration_s * 1000
-        groups = [
-            ([0, 1], (0, 100, 100)),  # Group 1 (Cyan) for NeoPixels 1 and 2.
+        """                                                                     
+        Runs a random order of the monkey-themed roll call show with colored    
+        groups.                                                                 
+                                                                                
+        Parameters:                                                             
+        :param duration_s: Total duration of the show.                          
+        :param min_delay_ms: Minimum delay between roll call bursts.            
+        :param max_delay_ms: Maximum delay between roll call bursts.            
+        """                                                                     
+        end_time = time.ticks_ms() + duration_s * 1000                          
+        groups = [                                                              
+            ([0, 1], (87, 8, 255)),  # Group 1 (Purple) for NeoPixels 1 and 2.  
             ([2, 3], (255, 0, 255)),  # Group 2 (Magenta) for NeoPixels 3 and 4.
-            ([4, 5, 6], (87, 8, 255)) # Group 3 (Purple) for NeoPixels 5, 6, and 7.
-        ]
-
-        while time.ticks_ms() < end_time:
-            # Randomly select a group:
-            group_indices, group_color = random.choice(groups)
-
-            # Simulate a roll call burst for the LEDs in the chosen group:
-            for index in group_indices:
-                self.do_firework_burst(index, group_color)
-
-            # Delay for a random duration before the next burst:
+            ([4, 5, 6], (0, 100, 100)) # Group 3 (Cyan) for NeoPixels 5, 6, and 7.
+        ]                                                                       
+                                                                                
+        while time.ticks_ms() < end_time:                                       
+            # Randomly select a group:                                          
+            group_indices, group_color = random.choice(groups)                  
+                                                                                
+            # Simulate a roll call burst for the LEDs in the chosen group:      
+            for index in group_indices:                                         
+                self.do_firework_burst(index, group_color)                      
+                                                                                
+            # Delay for a random duration before the next burst:                
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
     def do_monkey_spaz(self, name, group_indices, group_color, duration_s=5, blink_duration_ms=100, min_delay_ms=100, max_delay_ms=500):
@@ -613,6 +610,35 @@ class LEDHandler:
 
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
+
+    def do_warm_swell(self, duration_s=5, swell_color=(255, 100, 0), swell_steps=100):
+        """
+        Creates a warm swell effect, where LEDs gradually brighten and then
+        fade.
+
+        Parameters:
+        :param duration_s: Total duration of the swell effect in seconds.
+        :param swell_color: Color tuple (R, G, B) for the swell.
+        :param swell_steps: Number of steps for the swell to reach max
+        brightness and fade.
+        """
+        delay_time = duration_s / (2 * swell_steps)  # Adjusted for up and down
+
+        # Swell up and down:
+        for step in range(2 * swell_steps):
+            # Using a sine function for smoother transitions:
+            ratio = (math.sin(math.pi * step / swell_steps) + 1) / 2
+            color = (
+                int(swell_color[0] * ratio),
+                int(swell_color[1] * ratio),
+                int(swell_color[2] * ratio)
+            )
+            for i in range(7):
+                self.np_light.set_color(i, color)
+            time.sleep_ms(int(delay_time * 1000))
+
+        # Turn off the LEDs at the end:
+        self.do_all_off()
 
     def do_predator_countdown(self, duration_s=10):
         """
@@ -658,6 +684,150 @@ class LEDHandler:
                     for led in group:
                         self.np_light.set_color(led, (0, 0, 0))
                         time.sleep_ms(500)
+
+    def do_predator_purple_magenta_cyan_countdown(self, duration_s=15):
+        """
+        Simulates the cyan-magenta-purple countdown timer effect similar to
+        the movie Predator.
+
+        Parameters:
+        :param duration_s: Total duration of the countdown effect in seconds.
+        """
+
+        # Groupings for the LEDs: First 2, next 2, last 3:
+        groups = [[0, 1], [2, 3], [4, 5, 6]]
+
+        # Each group will have an equal share of the total duration:
+        delay_per_group = duration_s / len(groups)
+
+        # Purple, Magenta, Cyan colors for the countdown:
+        colors = [(87, 8, 255), (255, 0, 255), (0, 100, 100)]
+
+        # Bright white color for LEDs:
+        white = (255, 255, 255)
+
+        # Dim white color for LEDs that have been counted down:
+        dim_white = (50, 50, 50)
+
+        # Initialize all LEDs to bright white:
+        self.np_light.fill(white)
+
+        # Increase the number of cycles to make the patterns more noticeable:
+        cycles_per_group = 5
+
+        # Iterate through the LED groups:
+        for group in groups:
+            for _ in range(cycles_per_group):
+                for current_color in colors:
+                    for led in group:
+                        self.np_light.set_color(led, current_color)
+                        time.sleep_ms(200) # Quick alternation for a fast cycle.
+                        self.np_light.set_color(led, dim_white)
+                        time.sleep_ms(200)
+
+            # For the last group of 3 LEDs, turn them off one at a time:
+            if group == [4, 5, 6]:
+                for led in reversed(group):
+                    self.np_light.set_color(led, (0, 0, 0))
+                    time.sleep_ms(500)
+            # For the other groups, turn off the LEDs in order:
+            else:
+                for led in group:
+                    self.np_light.set_color(led, (0, 0, 0))
+                    time.sleep_ms(500)
+
+    def do_slot_machine_effect(self, duration_s=10):
+        """
+        Simulates the vibrant blinking effect similar to a slot machine.
+
+        Parameters:
+        :param duration_s: Total duration of the slot machine effect in seconds.
+        """
+
+        # Define some vibrant colors: Red, Green, Blue, Yellow, Cyan, Magenta,
+        # White:
+        vibrant_colors = [
+            (255, 0, 0),
+            (0, 255, 0),
+            (0, 0, 255),
+            (255, 255, 0),
+            (0, 100, 100),
+            (255, 0, 255),
+            (87, 8, 255)
+        ]
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        # Main loop for the duration of the effect:
+        while time.ticks_ms() < end_time:
+
+            # Randomly choose a vibrant color:
+            chosen_color = random.choice(vibrant_colors)
+
+            # Sequentially light up each LED with the chosen color:
+            for led in range(7):
+                self.np_light.set_color(led, chosen_color)
+                time.sleep_ms(100)  # Brief delay for the 'motion' effect.
+                self.np_light.set_color(led, (0, 0, 0))  # Turn off the LED.
+
+            # After completing a sequence, let's add a rapid blinking effect:
+            for _ in range(3):  # 3 times for a noticeable effect.
+                self.np_light.fill(chosen_color)
+                time.sleep_ms(100)  # ON state delay.
+                self.do_all_off()
+                time.sleep_ms(100)  # OFF state delay.
+
+    def do_jackpot_effect(self, duration_s=10):                                 
+        """                                                                     
+        Simulates a jackpot effect similar to a slot machine hitting a big win. 
+                                                                                
+        Parameters:                                                             
+        :param duration_s: Total duration of the jackpot effect in seconds.     
+        """                                                                     
+                                                                                
+        # Define some vibrant colors: Red, Green, Blue, Yellow, Cyan, Magenta,  
+        # White:                                                                
+        vibrant_colors = [                                                      
+            (255, 0, 0),                                                        
+            (0, 255, 0),                                                        
+            (0, 0, 255),                                                        
+            (255, 255, 0),                                                      
+            (0, 100, 100),                                                      
+            (255, 0, 255),                                                      
+            (87, 8, 255)                                                        
+        ]                                                                       
+                                                                                
+        end_time = time.ticks_ms() + duration_s * 1000                          
+                                                                                
+        # 1. Fast Blinking:                                                     
+        for _ in range(5):                                                      
+            self.do_all_off()                                                   
+            time.sleep_ms(50)                                                   
+            self.np_light.fill(random.choice(vibrant_colors))                   
+            time.sleep_ms(50)                                                   
+                                                                                
+        # 2. Wave of Colors:                                                    
+        for color in vibrant_colors:                                            
+            for led in range(7):                                                
+                self.np_light.set_color(led, color)                             
+                time.sleep_ms(100)                                              
+                self.np_light.set_color(led, (0, 0, 0))                         
+                                                                                
+        # 3. Random Pulsing:                                                    
+        pulse_end_time = time.ticks_ms() + 2 * 1000  # Pulse for 2 seconds.     
+        while time.ticks_ms() < pulse_end_time:                                 
+            led = random.randint(0, 6)                                          
+            self.np_light.set_color(led, random.choice(vibrant_colors))         
+            time.sleep_ms(100)                                                  
+            self.np_light.set_color(led, (0, 0, 0))                             
+            time.sleep_ms(50)                                                   
+                                                                                
+        # 4. Prolonged Brightness:                                              
+        self.np_light.fill((87, 8, 255))                                        
+        time.sleep_ms(duration_s * 1000 - (pulse_end_time - time.ticks_ms()))   
+                                                                                
+        # Turn off the LEDs at the end:                                         
+        self.do_all_off()
 
     def do_boot_sequence(self):
         """
@@ -720,64 +890,72 @@ class LEDHandler:
         self.do_all_off()
 
     def do_demo(self):
-        print('do_boot_sequence starting...')
-        self.do_boot_sequence()
-        print('do_countdown_timer starting...')
-        self.do_countdown_timer(7)
-        print('do_predator_countdown starting...')
-        self.do_predator_countdown()
-        print('do_monkey_spaz Shade starting...')
-        self.do_monkey_spaz("shade", [0, 1], (0, 100, 100))
-        print('do_monkey_spaz Kans starting...')
-        self.do_monkey_spaz("kans", [2, 3], (255, 0, 255))
-        print('do_monkey_spaz MiC starting...')
-        self.do_monkey_spaz("mic", [4, 5, 6], (87, 8, 255))
-        print('do_monkey_roll_call starting...')
-        self.do_monkey_roll_call()
-        print('do_random_monkey_spaz starting...')
-        self.do_random_monkey_spaz()
-        print('do_fireworks_show starting...')
-        self.do_fireworks_show()
-        print('do_cyan_sweep starting...')
-        self.do_cyan_sweep()
-        print('do_magenta_sweep starting...')
-        self.do_magenta_sweep()
-        print('do_purple_sweep starting...')
-        self.do_purple_sweep()
-        print('do_cyan_sweep starting...')
-        self.do_cyan_sweep()
-        print('do_magenta_sweep starting...')
-        self.do_magenta_sweep()
-        print('do_purple_sweep starting...')
-        self.do_purple_sweep()
-        print('do_grouped_fireworks_show starting...')
-        self.do_grouped_fireworks_show()
-        print('do_kans_wink starting...')
-        self.do_kans_wink()
-        print('do_rainbow_cycle starting...')
-        self.do_rainbow_cycle()
-        print('do_heartbeat starting...')
-        self.do_heartbeat()
-        print('do_heartbeat starting...')
-        self.do_heartbeat()
-        print('do_double_heartbeat starting...')
-        self.do_double_heartbeat()
-        print('do_double_heartbeat starting...')
-        self.do_double_heartbeat()
-        print('do_heartbeat starting...')
-        self.do_heartbeat()
-        print('do_chaser starting...')
-        self.do_chaser()
-        print('do_random_twinkle starting...')
-        self.do_random_twinkle()
-        print('do_gradient_fade starting...')
-        self.do_gradient_fade()
-        print('do_strobe starting...')
-        self.do_strobe()
-        print('do_popcorn_effect starting...')
-        self.do_popcorn_effect()
-        print('do_kans_wink starting...')
-        self.do_kans_wink()
-        print('Turning everything off...')
+        print('do_boot_sequence starting...')                                   
+        self.do_boot_sequence()                                                 
+        print('do_predator_countdown starting...')                              
+        self.do_predator_countdown()                                            
+        print('do_predator_purple_magenta_cyan_countdown starting...')          
+        self.do_predator_purple_magenta_cyan_countdown()                        
+        print('do_warm_swell starting...')                                      
+        self.do_warm_swell()                                                    
+        print('do_slot_machine_effect starting...')                             
+        self.do_slot_machine_effect()                                           
+        print('do_jackpot_effect starting...')                                  
+        self.do_jackpot_effect()                                                
+        print('do_countdown_timer starting...')                                 
+        self.do_countdown_timer(7)                                              
+        print('do_monkey_spaz Shade starting...')                               
+        self.do_monkey_spaz("shade", [0, 1], (87, 8, 255))                      
+        print('do_monkey_spaz Kans starting...')                                
+        self.do_monkey_spaz("kans", [2, 3], (255, 0, 255))                      
+        print('do_monkey_spaz MiC starting...')                                 
+        self.do_monkey_spaz("mic", [4, 5, 6], (0, 100, 100))                    
+        print('do_monkey_roll_call starting...')                                
+        self.do_monkey_roll_call()                                              
+        print('do_random_monkey_spaz starting...')                              
+        self.do_random_monkey_spaz()                                            
+        print('do_fireworks_show starting...')                                  
+        self.do_fireworks_show()                                                
+        print('do_cyan_sweep starting...')                                      
+        self.do_cyan_sweep()                                                    
+        print('do_magenta_sweep starting...')                                   
+        self.do_magenta_sweep()                                                 
+        print('do_purple_sweep starting...')                                    
+        self.do_purple_sweep()                                                  
+        print('do_cyan_sweep starting...')                                      
+        self.do_cyan_sweep()                                                    
+        print('do_magenta_sweep starting...')                                   
+        self.do_magenta_sweep()                                                 
+        print('do_purple_sweep starting...')                                    
+        self.do_purple_sweep()                                                  
+        print('do_grouped_fireworks_show starting...')                          
+        self.do_grouped_fireworks_show()                                        
+        print('do_kans_wink starting...')                                       
+        self.do_kans_wink()                                                     
+        print('do_rainbow_cycle starting...')                                   
+        self.do_rainbow_cycle()                                                 
+        print('do_heartbeat starting...')                                       
+        self.do_heartbeat()                                                     
+        print('do_heartbeat starting...')                                       
+        self.do_heartbeat()                                                     
+        print('do_double_heartbeat starting...')                                
+        self.do_double_heartbeat()                                              
+        print('do_double_heartbeat starting...')                                
+        self.do_double_heartbeat()                                              
+        print('do_heartbeat starting...')                                       
+        self.do_heartbeat()                                                     
+        print('do_chaser starting...')                                          
+        self.do_chaser()                                                        
+        print('do_random_twinkle starting...')                                  
+        self.do_random_twinkle()                                                
+        print('do_gradient_fade starting...')                                   
+        self.do_gradient_fade()                                                 
+        print('do_strobe starting...')                                          
+        self.do_strobe()                                                        
+        print('do_popcorn_effect starting...')                                  
+        self.do_popcorn_effect()                                                
+        print('do_kans_wink starting...')                                       
+        self.do_kans_wink()                                                     
+        print('Turning everything off...')                                      
         self.do_all_off()
         print('Demo complete!')
