@@ -2,6 +2,7 @@ import machine
 import neopixel
 import time
 import random
+import math
 import uasyncio as asyncio
 
 # Utility Functions:
