@@ -108,6 +108,7 @@ class DisplayHandler:
     def _unfullscreen(self):
         self.fullscreen = False
         self._start_ticker()
+        self._update_status()
         self.display.fill(0)
 
     def _body_from(self, i):
@@ -151,7 +152,6 @@ class DisplayHandler:
             self.menu_top += 1
         self._body_from(self.menu_top)
         self.display.blit(self.body, 0, 8)
-        self.display.show()
 
     def update_menu_name(self, context):
         if self.fullscreen:
@@ -159,6 +159,15 @@ class DisplayHandler:
         self.header_left.fill(0)
         self.header_left.text(context, 0, 0, 1)
         self.display.blit(self.header_left, 0, 0)
+
+    def update_menu_items(self, items):
+        if self.fullscreen:
+            self._unfullscreen()
+        self.menu_items = [x.name for x in items]  # list of MenuItem
+        self.menu_index = 0
+
+    def finalize_body(self):
+        self._update_body()
         self.display.show()
 
     def set_ir_status(self, ir_status):
@@ -181,18 +190,20 @@ class DisplayHandler:
         self.wifi_status = wifi_status
         self._update_status()
 
-    def increment_menu(self):
+    def menu_down(self):
         if self.menu_index == len(self.menu_items) - 1:
             return self.menu_index
         self.menu_index += 1
         self._update_body()
+        self.finalize_body()
         return self.menu_index
 
-    def decrement_menu(self):
+    def menu_up(self):
         if self.menu_index == 0:
             return self.menu_index
         self.menu_index -= 1
         self._update_body()
+        self.finalize_body()
         return self.menu_index
 
     def clear(self):

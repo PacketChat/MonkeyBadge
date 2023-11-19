@@ -18,7 +18,7 @@ class MenuItem:
             if result is not None:
                 return result
         return None
-    
+
     def get_display_text(self):
         if self.dynamic_text:
             return self.dynamic_text()
@@ -34,7 +34,7 @@ class Menu:
         :param title: Menu title
         :param parent: Parent menu
         """
-        self.items = items + [MenuItem("Back")] if parent else items
+        self.items = [MenuItem("Back")] + items if parent else items
         self.selected = 0
         self.parent = parent
         self.title = title
@@ -42,7 +42,7 @@ class Menu:
 
     def move_up(self):
         """
-        Move the selection up one item        
+        Move the selection up one item
         """
         if self.selected > 0:
             self.selected -= 1
@@ -60,7 +60,15 @@ class Menu:
                 self.top_index = self.selected - 3
                 print(f"{self.title}: {self.top_index}")
 
-    def select(self):
+    def select(self, index):
+        """
+        Set the selection
+        """
+        if 0 > index >= len(self.items):
+            return
+        self.selected = index
+
+    def selection(self):
         """
         Select the current item
         """
