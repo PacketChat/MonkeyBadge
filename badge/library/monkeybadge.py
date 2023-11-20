@@ -44,6 +44,7 @@ class MonkeyBadge:
         # boot
         print("Badge Booting")
         self.display.print_logo()
+
         #self.leds.do_rainbow_cycle(speed=1)
         self.leds.do_boot_sequence()
 
@@ -163,89 +164,45 @@ class MonkeyBadge:
 
     def _button_callback(self,button_idx):
 
-        if button_idx == 0: self.current_menu.move_up()
-        elif button_idx == 1: self.current_menu.move_down()
-        elif button_idx == 2: self.select_button()
-        elif button_idx == 3: self.toggle_mute()
-        self._update_display()
+        if button_idx == 0:
+            index = self.display.menu_up()
+            self.current_menu.select(index)
+        elif button_idx == 1:
+            index = self.display.menu_down()
+            self.current_menu.select(index)
+        elif button_idx == 2:
+            self.select_button()
+        elif button_idx == 3:
+            self.toggle_mute()
 
     def select_button(self):
-        new_menu = self.current_menu.select()
+        new_menu = self.current_menu.selection()
         if new_menu is not None:
             self.current_menu = new_menu
         elif self.current_menu.parent:
             self.current_menu = self.current_menu.parent
+        self._update_display()
+        self.current_menu.select(0)
 
     def toggle_mute(self):
         if self.radio.muted:
             self.radio.unmute()
+            self.display.set_muted(False)
         else:
             self.radio.mute()
+            self.display.set_muted(True)
 
-    def _build_display_header(self):
-        """ build the header, limited to 16 characters (oled width)"""
+    #     # is wifi on? what's the strength?
+    #     if self.wifi_manager.isWifiConnected():
+    #         if self.wifi_manager.get_wifi_strength() >= -45: wifistatus =  ".  "
+    #         elif self.wifi_manager.get_wifi_strength() >= -65: wifistatus = ".o "
+    #         else: wifistatus = ".oO"
+    #     else: wifistatus = " ? "
 
-        # ir enabled?
-        if self.current_menu: menu = self.current_menu
-        else: menu = ""
-
-        # radio muted?
-        if self.radio.muted: mute = "m"
-        else: mute = "u"
-
-        # is wifi on? what's the strength?
-        if self.wifi_manager.isWifiConnected():
-            if self.wifi_manager.get_wifi_strength() >= -45: wifistatus =  ".  "
-            elif self.wifi_manager.get_wifi_strength() >= -65: wifistatus = ".o "
-            else: wifistatus = ".oO"
-        else: wifistatus = " ? "
-
-        if self.ir_enabled == True: ir = "I"
-        else: ir = "i"
-
-        # hw status is 3 characters and a space (4 total) that leaves 12 characters for the menu heading.
-        if menu == "": blanks = " " * 10
-        elif len(menu.title) < 10: blanks = " " * (10 - len(menu.title))
-        header = f"{menu.title}{blanks}{wifistatus} {mute}{ir}"
-        return header
-
-    def _build_display_footer(self, message=""):
-        if message == "":
-            return message * 16
-        else:
-            return message
-
-    def _update_display(self, show_footer=True):
-        """
-        Update the display with the current menu
-        """
-        # build the header
-        header = self._build_display_header()
-        content = self._build_menu_content()
-
-        buffer = []
-        buffer.append(header)  # header first
-        buffer.extend(content) # content second
-
-        # if there's a footer - display it
-        if show_footer == True:
-            buffer.append(self._build_display_footer())
-
-        self.display.clear()
-        self.display.print_lines(buffer)
-
-    def _build_menu_content(self):
-            """
-            return 4 lines of menu content
-            """
-            content = []
-
-            display_range = self.current_menu.items[self.current_menu.top_index:self.current_menu.top_index + 4]
-
-            for i, item in enumerate(display_range):
-                display_line = "* " + item.get_display_text() if self.current_menu.top_index + i == self.current_menu.selected else "  " + item.get_display_text()
-                content.append(display_line)
-            return content
+    def _update_display(self):
+        self.display.update_menu_name(self.current_menu.title)
+        self.display.update_menu_items(self.current_menu.items)
+        self.display.finalize_body()
 
     def _schedule_ir_input(self, addr, data, _):
         """Defers handling of IR input outside of an IRQ"""
@@ -377,7 +334,7 @@ class MonkeyBadge:
         # Setup WiFi
         await self.wifi_manager.connect()
 
-        print (f"Radio tuned to {self.radio.getFreq()}")
+        print(f"Radio tuned to {self.radio.getFreq()}")
 
         # Setup button handler
         self.button_handler = ButtonHandler(config.BUTTON_PINS)

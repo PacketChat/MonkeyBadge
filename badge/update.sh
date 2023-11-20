@@ -9,4 +9,5 @@ fi
 mpremote cp config.py :
 mpremote cp main.py :
 mpremote cp -r library/ :
+mpremote fs touch :badgedb
 mpremote rm :badgedb
