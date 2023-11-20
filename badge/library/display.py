@@ -71,9 +71,9 @@ class DisplayHandler:
         self.i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin))
         self.display = ssd1306.SSD1306_I2C(width, height, self.i2c)
 
-        self.header_right = framebuf.FrameBuffer(bytearray(24), 24, 8,
+        self.header_right = framebuf.FrameBuffer(bytearray(48), 48, 8,
                                                  framebuf.MONO_HLSB)
-        self.header_left = framebuf.FrameBuffer(bytearray(104), 104, 8,
+        self.header_left = framebuf.FrameBuffer(bytearray(80), 80, 8,
                                                 framebuf.MONO_HLSB)
         self.body = framebuf.FrameBuffer(bytearray(128 * 6), 128, 8 * 6,
                                          framebuf.MONO_HLSB)
@@ -116,7 +116,7 @@ class DisplayHandler:
         new_index = self.menu_index - i
         for j, item in enumerate(display_items):
             text = '{} {}'.format(
-                    '> ' if j == new_index else '  ',
+                    '>' if j == new_index else ' ',
                     item
             )
             self.body.text(text, 0, 8 * j, 1)
@@ -129,15 +129,24 @@ class DisplayHandler:
     def _update_status(self):
         if self.fullscreen:
             self._unfullscreen()
+        if self.wifi_status is None:
+            wifi_msg = '???'
+        elif self.wifi_status >= -45:
+            wifi_msg = '.'
+        elif self.wifi_status >= -65:
+            wifi_msg = '.o'
+        else:
+            wifi_msg = '.oO'
+
         self.header_right.fill(0)
-        status = '{}{}{}'.format(
+        status = '{}{} {}'.format(
                 'm' if self.muted else 'u',
-                self.wifi_status if self.wifi_status else '?',
-                'I' if self.ir_status else 'i'
+                'I' if self.ir_status else 'i',
+                wifi_msg
         )
 
         self.header_right.text(status, 0, 0, 1)
-        self.display.blit(self.header_right, 104, 0)
+        self.display.blit(self.header_right, 80, 0)
         self.display.show()
 
     def _update_body(self):
@@ -163,7 +172,8 @@ class DisplayHandler:
     def update_menu_items(self, items):
         if self.fullscreen:
             self._unfullscreen()
-        self.menu_items = [x.name for x in items]  # list of MenuItem
+        # list of MenuItem
+        self.menu_items = [x.get_display_text() for x in items]
         self.menu_index = 0
 
     def finalize_body(self):

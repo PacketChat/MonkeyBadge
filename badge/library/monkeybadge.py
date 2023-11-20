@@ -46,7 +46,7 @@ class MonkeyBadge:
         self.display.print_logo()
 
         #self.leds.do_rainbow_cycle(speed=1)
-        self.leds.do_boot_sequence()
+        # self.leds.do_boot_sequence()
 
         # IR init
         #NECRx(Pin(config.IR_RX_PIN, Pin.IN), self._schedule_ir_input)
@@ -162,7 +162,7 @@ class MonkeyBadge:
     def donothing(self):
         return self.current_menu
 
-    def _button_callback(self,button_idx):
+    def _button_callback(self, button_idx):
 
         if button_idx == 0:
             index = self.display.menu_up()
@@ -182,7 +182,7 @@ class MonkeyBadge:
         elif self.current_menu.parent:
             self.current_menu = self.current_menu.parent
         self._update_display()
-        self.current_menu.select(0)
+        self.current_menu.select(self.current_menu.selected)
 
     def toggle_mute(self):
         if self.radio.muted:
@@ -192,17 +192,10 @@ class MonkeyBadge:
             self.radio.mute()
             self.display.set_muted(True)
 
-    #     # is wifi on? what's the strength?
-    #     if self.wifi_manager.isWifiConnected():
-    #         if self.wifi_manager.get_wifi_strength() >= -45: wifistatus =  ".  "
-    #         elif self.wifi_manager.get_wifi_strength() >= -65: wifistatus = ".o "
-    #         else: wifistatus = ".oO"
-    #     else: wifistatus = " ? "
-
     def _update_display(self):
         self.display.update_menu_name(self.current_menu.title)
         self.display.update_menu_items(self.current_menu.items)
-        self.display.finalize_body()
+        self.display.finalize_body()  # write
 
     def _schedule_ir_input(self, addr, data, _):
         """Defers handling of IR input outside of an IRQ"""
@@ -323,10 +316,14 @@ class MonkeyBadge:
         """
         while True:
             if self.wifi_manager.isWifiConnected():
-                print("Wifi is connected")
+                self.display.set_wifi_status(
+                        self.wifi_manager.get_wifi_strength())
             else:
-                print("Wifi is not connected, trying to connect.")
-                await self.wifi_manager.connect()
+                if await self.wifi_manager.connect():
+                    self.display.set_wifi_status(
+                            self.wifi_manager.get_wifi_strength())
+                else:
+                    self.display.set_wifi_status(None)
             await asyncio.sleep(60)
 
     async def run(self):
