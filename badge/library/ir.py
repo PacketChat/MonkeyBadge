@@ -1,8 +1,12 @@
+"""IR API Layer"""
 from machine import Pin
+import micropython
 import time
+import uasyncio as asyncio
 
 import config
-from ir_tx.nec import NEC as NECTx
+from library.ir_tx.nec import NEC as NECTx
+from library.ir_rx.nec import NEC_16 as NECRx
 
 class BadMessage(Exception):
     """Raised if a bad message is received"""
@@ -55,10 +59,29 @@ class IRMessage:
 
 class IR:
     def __init__(self, self_addr):
+        self.enabled = False
+        self.pairing = False
+        self.monkey_mode = False
+        self.hiddren_objects = False
+
         self.tx = NECTx(Pin(config.IR_TX_PIN, Pin.Out))
+        self.rx = None
         self.partials = {}
         self.self_addr = self_addr
         self.msgs = []
+
+    def __schedule_recv(self, *args):
+        micropython.schedule(self.recv, args)
+
+    def _keep_message(self, opcode, sender, extra):
+        opcode_name = config.REV_IR_OPCODES[opcode]
+        if opcode_name == 'MONKEY' and not self.monkey_mode:
+            return False
+        if opcode_name == 'HIDDEN_OBJECT' and not self.hiddren_objects:
+            return False
+        if opcode_name == 'INIT_PAIR' and not self.pairing:
+            return False
+        return True
 
     def recv(self, addr, data):
         # ignore messages received from my own transmitter
@@ -79,11 +102,54 @@ class IR:
 
         if self.partials[addr].finalized:
             msg = self.partials[addr].message()
-            self.msgs.append(msg)
+            # filter out non-enabled messages
+            if self._keep_message(*msg):
+                self.msgs.append(msg)
             del self.partials[addr]
 
     def send(self, data):
         """Send data over IR, data should be a list of uint8"""
+        if not self.enabled:
+            return
         for item in data:
             self.tx.transmit(self.self_addr, item)
-            time.sleep_ms(CONFIG.IR_TX_DELAY)
+            time.sleep_ms(config.IR_TX_DELAY)
+
+    def send_discover(self):
+        """Sends a discover packet"""
+        data = [config.IR_OPCODES['DISCOVER'].code]
+        self.send(data)
+
+    def send_emote(self, dst, emote):
+        """Stretch goal: send an emote"""
+        data = [config.IR_OPCODES['EMOTE'].code, emote]
+        data.extend(dst.to_bytes(2, 'big'))
+        self.send(data)
+
+    def initiate_pairing(self):
+        """Sends a pairing request"""
+        data = [config.IR_OPCODES['INIT_PAIR'].code]
+        self.send(data)
+
+    def enable(self):
+        """Enable IR Recv"""
+        self.enabled = True
+        self.rx = NECRx(Pin(config.IR_RX_PIN),
+                        self.__schedule_recv)
+
+    def disable(self):
+        """Disable IR Recv"""
+        self.enabled = False
+        self.rx.close()
+        self.rx = None
+
+    def enable_monkey_mode(self):
+        """Enabled for receiving monkey packets"""
+        self.monkey_mode = True
+
+    def enable_hidden_object_mode(self):
+        """Enabled for receiving hidden object packets"""
+        self.hiddren_objects = True
+
+    def enable_pairing(self):
+        self.pairing = True
