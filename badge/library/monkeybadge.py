@@ -44,7 +44,10 @@ class MonkeyBadge:
         # boot
         print("Badge Booting")
         self.display.print_logo()
-        self.leds.do_rainbow_cycle(speed=1)
+
+        #self.leds.do_rainbow_cycle(speed=1)
+        self.leds.do_boot_sequence()
+
         # IR init
         #NECRx(Pin(config.IR_RX_PIN, Pin.IN), self._schedule_ir_input)
 
@@ -188,7 +191,6 @@ class MonkeyBadge:
         else:
             self.radio.mute()
             self.display.set_muted(True)
-
 
     #     # is wifi on? what's the strength?
     #     if self.wifi_manager.isWifiConnected():

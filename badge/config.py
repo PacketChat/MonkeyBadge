@@ -41,6 +41,9 @@ SAO1_GPIO2 = 27
 # EMOTE: (0x000a, 0x06, 0x01, 0x00, 0x0b) <--- a wants be to show emote 0x01 (lol)
 # EMOTE: (0x000b, 0x06, 0x02, 0xff, 0xff) <--- b wants all badges in the vicinity
 #                                              to show emote 0x02 (lmao)
+# MONKEY: (0xffff, 0x07, 0xaa, 0xaa) <--- monkey ffff secret pass aaaa
+# HIDDEN_OBJECT: (0xeeee, 0x08, 0xbb, 0xbb) <---- hidden object eeee with
+#                                                 secret pass bbbb
 Opcode = namedtuple('Opcode', ['code', 'additional_bytes'])
 IR_OPCODES = {
         'DISCOVER': Opcode(1, 0),
@@ -49,8 +52,10 @@ IR_OPCODES = {
         'RESP_PAIR': Opcode(4, 2),
         'ACK_RESP': Opcode(5, 2),
         'EMOTE': Opcode(6, 3),
+        'MONKEY': Opcode(7, 2),
+        'HIDDEN_OBJECT': Opcode(8, 2)
 }
-#REV_IR_OPCODES = {val.code: key for key, val in OPCODES.items()}
+REV_IR_OPCODES = {val.code: key for key, val in IR_OPCODES.items()}
 
 IR_TX_DELAY = 115  # delay between tx pulses in ms
 # messages received after this much delay (in ms) become a new message
