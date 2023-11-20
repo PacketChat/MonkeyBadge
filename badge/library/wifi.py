@@ -23,26 +23,15 @@ class WiFiManager:
         if not self.wlan.isconnected():
             print('Connecting to network...')
             self.wlan.connect(self.ssid, self.password)
+        return True if self.wlan.isconnected() else False
 
-            # Timeout implementation
-            timeout = 10  # Timeout in seconds
-            start_time = utime.time()  # Get the current time in seconds
-
-            while not self.wlan.isconnected():
-                await asyncio.sleep(.1)  # non-blocking wait
-                if utime.time() - start_time > timeout:
-                    print("Failed to connect to WiFi within the timeout period.")
-                    return False  # Indicate failure
-        print('Network config:', self.wlan.ifconfig())
-        return True
-    
     async def get_status(self):
         """
         Get the status of the WiFi connection
         :return: A tuple containing the status of the WiFi connection
         """
         return self.wlan.ifconfig()
-    
+
     def isWifiConnected(self):
         """
         Check if the WiFi is connected
@@ -53,7 +42,7 @@ class WiFiManager:
     def get_mac(self):
         """
         Get the MAC address of the WiFi interface
-        
+
         :return: The MAC address of the WiFi interface
         """
         return ubinascii.hexlify(self.wlan.config('mac'),':').decode()

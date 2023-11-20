@@ -7,7 +7,10 @@ WIFI_PASSWORD = "williams123"
 
 # badge config
 REG_KEY = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
-API_SERVER = "https://update.kafka.tel:8000"
+API_SERVER = "http://192.168.184.183:8000"
+# CHECKIN_PERIOD = 60
+CHECKIN_PERIOD = 5
+LOAD_GAMESTATE_PERIOD = 65
 BUTTON_PINS = [4, 14, 15, 13]
 BUTTON_PIN_DESCRIPTIONS = [
         "left up",

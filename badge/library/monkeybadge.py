@@ -45,11 +45,7 @@ class MonkeyBadge:
         print("Badge Booting")
         self.display.print_logo()
 
-        #self.leds.do_rainbow_cycle(speed=1)
-        # self.leds.do_boot_sequence()
-
-        # IR init
-        #NECRx(Pin(config.IR_RX_PIN, Pin.IN), self._schedule_ir_input)
+        self.leds.set_led_lights('do_boot_sequence')
 
         self.registration_key = config.REG_KEY
         self.current_menu = None
@@ -255,8 +251,8 @@ class MonkeyBadge:
             print("wrote gamestate to localdb")
 
     async def load_gamestate(self):
-        if self.apitoken:
-            while True:
+        while True:
+            if self.apitoken:
                 j = json.loads(self.db.get("state"))
                 if j:
                     print("loaded gamestate from localdb")
@@ -275,16 +271,15 @@ class MonkeyBadge:
                 if self.current_challenge == "intro" and self.intro['enabled'] == 1 and self.intro['complete'] == 0:
                     print("Konami code goes here")
 
-                await asyncio.sleep(65)  # non-blocking wait for 1 minute
+            await asyncio.sleep(config.LOAD_GAMESTATE_PERIOD)  # non-blocking wait for 1 minute
 
 
     async def checkin(self):
         """
         Checkin with the MonkeyBadge server API
         """
-        if self.wifi_manager.isWifiConnected():
-
-            while True:
+        while True:
+            if self.wifi_manager.isWifiConnected():
                 if not self.apitoken:
                     print("No API token, registering badge")
                     self.register()
@@ -306,9 +301,9 @@ class MonkeyBadge:
                         print("badge not registered.")
                 except Exception as e:
                     print("Error making API call:", e)
-                await asyncio.sleep(60)  # non-blocking wait for 1 minute
-        else:
-            print("Wifi is not connected, skipping checkin.")
+            else:
+                print("Wifi is not connected, skipping checkin.")
+            await asyncio.sleep(config.CHECKIN_PERIOD)  # non-blocking wait for 1 minute
 
     async def wifi_check(self):
         """

@@ -53,6 +53,18 @@ class LEDHandler:
         Initialize the light show with a NeoPixel light. This is where you set the brightness level for the light show.
         """
         self.np_light = NeoPixelLight(18, 7, brightness=0.8)
+        self.led_task = None
+
+    async def led_run_async(self, func, args, kwargs):
+        func(*args, **kwargs)
+
+    def set_led_lights(self, lights_func, *args, **kwargs):
+        func = getattr(self, lights_func)
+        if self.led_task:
+            self.led_task.cancel()
+        self.led_task = asyncio.create_task(
+                self.led_run_async(func, args, kwargs)
+        )
 
     def do_all_off(self):
         """Turn off all LEDs."""
