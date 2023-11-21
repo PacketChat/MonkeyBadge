@@ -120,6 +120,7 @@ class MonkeyBadge:
         self.lightshow_menu.items.extend([
             MenuItem("popcorn", _lightshow('do_popcorn_effect')),
             MenuItem("roll call", _lightshow('do_monkey_roll_call')),
+            MenuItem("heartbeat", _lightshow('do_heartbeat')),
         ])
 
     def lock_station(self, freq):
@@ -162,15 +163,17 @@ class MonkeyBadge:
     def donothing(self):
         return self.current_menu
 
-
     def _left_up_butback(self):
         index = self.display.menu_up()
         self.current_menu.select(index)
+
     def _left_down_butback(self):
         index = self.display.menu_down()
         self.current_menu.select(index)
+
     def _center_butback(self):
         self.select_button()
+
     def _right_butback(self):
         self.toggle_mute()
 
@@ -178,10 +181,7 @@ class MonkeyBadge:
         new_menu = self.current_menu.selection()
         if new_menu is not None:
             self.current_menu = new_menu
-        elif self.current_menu.parent:
-            self.current_menu = self.current_menu.parent
-        self._update_display()
-        self.current_menu.select(self.current_menu.selected)
+        self._update_display(menu_index=self.current_menu.selected)
 
     def toggle_mute(self):
         if self.radio.muted:
@@ -191,9 +191,9 @@ class MonkeyBadge:
             self.radio.mute()
             self.display.set_muted(True)
 
-    def _update_display(self):
+    def _update_display(self, menu_index=0):
         self.display.update_menu_name(self.current_menu.title)
-        self.display.update_menu_items(self.current_menu.items)
+        self.display.update_menu_items(self.current_menu.items, menu_index)
         self.display.finalize_body()  # write
 
     def _schedule_ir_input(self, addr, data, _):
@@ -247,7 +247,7 @@ class MonkeyBadge:
             "key": self.registration_key,
             "myUUID": self.badge_uuid
             }
-        
+
         r = self.gameclient.reg_request(request_body)
 
         if r:
@@ -256,7 +256,7 @@ class MonkeyBadge:
             self.db.set("token", self.apitoken)
         else:
             print("registration failed")
-    
+
     async def checkin(self):
         """
         Checkin with the MonkeyBadge server API

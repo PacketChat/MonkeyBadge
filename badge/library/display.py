@@ -170,12 +170,12 @@ class DisplayHandler:
         self.header_left.text(context, 0, 0, 1)
         self.display.blit(self.header_left, 0, 0)
 
-    def update_menu_items(self, items):
+    def update_menu_items(self, items, index=0):
         if self.fullscreen:
             self._unfullscreen()
         # list of MenuItem
         self.menu_items = [x.get_display_text() for x in items]
-        self.menu_index = 0
+        self.menu_index = index
 
     def finalize_body(self):
         self._update_body()
