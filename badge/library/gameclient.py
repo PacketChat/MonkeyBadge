@@ -20,11 +20,10 @@ class GameClient:
         # get a handle from the server
         r = requests.get(self.baseurl + "/generate_handle")
         if r.status_code == 200:
-            self.handle = r.text.strip("\"")
+            request_body['handle'] = r.text.strip("\"")
         else:
-            self.handle = "unnamed_monkey"
+            request_body['handle'] = "unnamed_monkey"
 
-        print(f"UUID: {self.badge_uuid}, handle: {self.handle}")
         print(f"connecting to {request_url}")           
         print(f"Sending JSON Values: {request_body}")
 
@@ -42,14 +41,14 @@ class GameClient:
         Checkin with the MonkeyBadge server API
         """
         request_url = self.baseurl + "/checkin"
-        print("connecting to {request_url}")
+        print(f"connecting to {request_url}")
         print(f"token: {apitoken}, uuid: {uuid}")
 
         request_body = {
             "myUUID": uuid
             }
         
-        r = self.secure_api_request(apitoken, request_body)
+        r = self.secure_api_request(request_url, apitoken, request_body)
         
         if r.status_code == 200:
             return r.json()
@@ -58,31 +57,30 @@ class GameClient:
 
     def konami_complete(self, token, uuid):
         request_url = self.baseurl + "/konamicomplete"
-        print("connecting to {request_url}")
+        print(f"connecting to {request_url}")
         print(f"token: {token}, uuid: {uuid}")
 
         request_body = {
             "myUUID": self.badge_uuid
             }
         
-        r = self.secure_api_request(token, request_body)
+        r = self.secure_api_request(request_url, token, request_body)
         
         if r.status_code == 200:
             return r.json()
         else:
             None
 
-    def secure_api_request(self, token, json):
+    def secure_api_request(self, url, token, json):
         """
         Send a request to the MonkeyBadge server API
         """
-        request_url = self.baseurl + "/api"
         header = {'X-API-Key': token }
 
-        print("API Call to {request_url}")
+        print(f"API Call to {url}")
         print(f"header: {token}\n body: {json}")
 
-        r = requests.post(request_url,
+        r = requests.post(url,
                         headers=header,
                         json=json)
         

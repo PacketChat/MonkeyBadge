@@ -35,7 +35,7 @@ class MonkeyBadge:
 
         # Display Init
         self.display = DisplayHandler(config.OLED_WIDTH, config.OLED_HEIGHT, config.OLED_SDA_PIN, config.OLED_SCL_PIN)
-
+        
         # Led init
         self.leds = LEDHandler()
 
@@ -50,9 +50,13 @@ class MonkeyBadge:
         self.ir_enabled = False
 
         # Need to pull these from the db store.
-        self.apitoken = self.db.get("token")
+        try:
+            self.apitoken = self.db.get("token")
+        except:
+            print("Unable to load token: badge not registered.")
+            self.apitoken = None 
+               
         self.lock_radio_station = False
-
         self.handle = ""
         self.IR_ID = ""
         self.current_challenge = None
@@ -207,16 +211,16 @@ class MonkeyBadge:
         try:
             current_state = json.loads(self.db.get("state"))
         except:
-            print("No current state to load")
+            print("Unable to load saved state: not found.")
             current_state = ""
-        #print(f"Current State {type(current_state)}: {current_state}")
-        #print(f"New State {type(new_state)}: {new_state}")
+        print(f"Current State {type(current_state)}: {current_state}")
+        print(f"New State {type(state)}: {state}")
 
         if current_state == state:
             print("gamestate unchanged")
         else:
             self.db.set("state", json.dumps(state))
-            print("wrote gamestate to localdb")
+            print("Saved gamestate to localdb")
 
     def load_gamestate(self, payload=None):
         if payload:
@@ -251,7 +255,7 @@ class MonkeyBadge:
         r = self.gameclient.reg_request(request_body)
 
         if r:
-            print("registeration successful")
+            print("registration successful")
             self.apitoken = r['token']
             self.db.set("token", self.apitoken)
         else:
@@ -271,8 +275,8 @@ class MonkeyBadge:
                     print("checking in badge")
                     r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
                     if r:
-                        self.save_gamestate(r.json())
-                        self.load_gamestate(r.json())
+                        self.save_gamestate(r)
+                        self.load_gamestate(r)
                         print("Badge successfully checked in")
                     else:
                         print("Badge checkin failed")

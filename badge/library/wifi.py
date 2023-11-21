@@ -23,7 +23,12 @@ class WiFiManager:
         if not self.wlan.isconnected():
             print('Connecting to network...')
             self.wlan.connect(self.ssid, self.password)
-        return True if self.wlan.isconnected() else False
+
+        if self.wlan.isconnected():
+            self.get_status()
+            return True 
+        else: 
+            return False
 
     async def get_status(self):
         """
@@ -37,6 +42,7 @@ class WiFiManager:
         Check if the WiFi is connected
         :return: True if connected, False if not connected
         """
+        print(f"WiFi status: {self.wlan.ifconfig()}")
         return True if self.wlan.isconnected() else False
 
     def get_mac(self):
