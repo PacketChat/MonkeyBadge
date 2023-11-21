@@ -1,14 +1,10 @@
 from machine import Pin
 import micropython
 
-import urequests as requests
-import usocket as socket
-import ussl as ssl
-
 import ujson as json
 import uasyncio as asyncio
 
-from library import konami
+#from library import konami
 from library.button import ButtonHandler
 from library.db import dbtree
 from library.display import DisplayHandler
@@ -16,6 +12,7 @@ from library.leds import LEDHandler
 from library.menu import Menu, MenuItem
 from library.radio import SI470X
 from library.wifi import WiFiManager
+from library.gameclient import GameClient
 
 #from library.ir_rx.nec import NEC_16 as NECRx
 import config  # Import the config file
@@ -31,7 +28,7 @@ class MonkeyBadge:
         self.radio = SI470X()
         self.radio.setVolume(1)
         self.db = dbtree()
-
+        self.gameclient = GameClient()
 
         # Wifi Init
         self.wifi_manager = WiFiManager(config.WIFI_SSID, config.WIFI_PASSWORD)
@@ -204,45 +201,10 @@ class MonkeyBadge:
         """Defers handling of IR input outside of an IRQ"""
         micropython.schedule(self._ir_input, [addr, data])
 
-    def register(self):
-        """
-        Register the badge with the MonkeyBadge server API
-        """
-        print("Doing checkin")
-        baseurl = config.API_SERVER
-
-        # get a handle from the server
-        r = requests.get(baseurl + "/generate_handle")
-        if r.status_code == 200:
-            self.handle = r.text.strip("\"")
-        else:
-            self.handle = "unnamed_monkey"
-
-        print("Running Badge Registration")
-        print("UUID: %s, handle: %s" %(self.badge_uuid, self.handle))
-        print("connecting to %s" % (baseurl + "/register"))
-        print("Sending JSON Values: %s" %({"handle": self.handle,
-                                   "key": self.registration_key,
-                                   "myUUID": self.badge_uuid}))
-
-        r = requests.post(baseurl + "/register",
-                          json={"myUUID": self.badge_uuid,
-                                "handle": self.handle,
-                                "key": self.registration_key})
-        json_data = json.loads(r.text)
-        if 'UUID' in json_data and r.status_code == 200:
-            print("badge registered")
-            self.apitoken = json_data['token']
-            self.db.set("token", self.apitoken)
-        else:
-            print("badge not registered.")
-
     def save_gamestate(self, state):
         """
         json_data is a json string from the server
         """
-        new_state = json.loads(state) # convert from string to json
-
         try:
             current_state = json.loads(self.db.get("state"))
         except:
@@ -251,10 +213,10 @@ class MonkeyBadge:
         #print(f"Current State {type(current_state)}: {current_state}")
         #print(f"New State {type(new_state)}: {new_state}")
 
-        if current_state == new_state:
+        if current_state == state:
             print("gamestate unchanged")
         else:
-            self.db.set("state", json.dumps(new_state))
+            self.db.set("state", json.dumps(state))
             print("wrote gamestate to localdb")
 
     def load_gamestate(self, payload=None):
@@ -280,34 +242,41 @@ class MonkeyBadge:
         else:
             print("No state to load")
 
+    def register(self):
+        request_body = {
+            "handle": self.handle,
+            "key": self.registration_key,
+            "myUUID": self.badge_uuid
+            }
+        
+        r = self.gameclient.reg_request(request_body)
+
+        if r:
+            print("registeration successful")
+            self.apitoken = r['token']
+            self.db.set("token", self.apitoken)
+        else:
+            print("registration failed")
+    
     async def checkin(self):
         """
         Checkin with the MonkeyBadge server API
         """
         while True:
-            print('checkin loop')
+            print('Badge checkin loop')
             if self.wifi_manager.isWifiConnected():
                 if not self.apitoken:
                     print("No API token, registering badge")
                     self.register()
-                try:
-                    print("Running check-in")
-                    baseurl = config.API_SERVER
-
-                    print("connecting to %s" % (baseurl + "/checkin"))
-
-                    print("token: %s, uuid: %s" %(self.apitoken, self.badge_uuid))
-                    r = requests.post(baseurl + "/checkin",
-                                    headers={'X-API-Key': self.apitoken },
-                                    json={"myUUID": self.badge_uuid})
-                    if r.status_code == 200:
-                        self.save_gamestate(r.text)
+                else:
+                    print("checking in badge")
+                    r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
+                    if r:
+                        self.save_gamestate(r.json())
                         self.load_gamestate(r.json())
-                        print("badge checked in.")
+                        print("Badge successfully checked in")
                     else:
-                        print("badge not registered.")
-                except Exception as e:
-                    print("Error making API call:", e)
+                        print("Badge checkin failed")
             else:
                 print("Wifi is not connected, skipping checkin.")
             await asyncio.sleep(config.CHECKIN_PERIOD)
@@ -372,7 +341,7 @@ class MonkeyBadge:
                     self.intro['complete'] == 0:
                 self.display.ticker.queue('konami code goes here')
                 self.deinitialize(tasks)
-                konami.main()
+                #konami.main()
                 self.intro['complete'] == 1
                 tasks = self.initialize_badge()
             await asyncio.sleep(5)
