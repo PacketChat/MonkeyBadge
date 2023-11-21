@@ -162,18 +162,17 @@ class MonkeyBadge:
     def donothing(self):
         return self.current_menu
 
-    def _button_callback(self, button_idx):
 
-        if button_idx == 0:
-            index = self.display.menu_up()
-            self.current_menu.select(index)
-        elif button_idx == 1:
-            index = self.display.menu_down()
-            self.current_menu.select(index)
-        elif button_idx == 2:
-            self.select_button()
-        elif button_idx == 3:
-            self.toggle_mute()
+    def _left_up_butback(self):
+        index = self.display.menu_up()
+        self.current_menu.select(index)
+    def _left_down_butback(self):
+        index = self.display.menu_down()
+        self.current_menu.select(index)
+    def _center_butback(self):
+        self.select_button()
+    def _right_butback(self):
+        self.toggle_mute()
 
     def select_button(self):
         new_menu = self.current_menu.selection()
@@ -303,15 +302,17 @@ class MonkeyBadge:
         self.load_gamestate()
 
         # Setup button handler
-        self.button_handler = ButtonHandler(config.BUTTON_PINS)
-        self.button_handler.set_callback(self._button_callback)
+        self.button_handler = ButtonHandler(
+                self._left_up_butback,
+                self._left_down_butback,
+                self._center_butback,
+                self._right_butback
+        )
 
         # Create tasks
-        button_check_task = asyncio.create_task(self.button_handler.check_buttons())
         checkin_task = asyncio.create_task(self.checkin())
         network_check_task = asyncio.create_task(self.wifi_check())
         tasks = {
-                'button_check_task': button_check_task,
                 'checkin_task': checkin_task,
                 'network_check_task': network_check_task
         }
@@ -339,9 +340,10 @@ class MonkeyBadge:
             if self.current_challenge == "intro" and \
                     self.intro['enabled'] == 1 and \
                     self.intro['complete'] == 0:
-                self.display.ticker.queue('konami code goes here')
-                self.deinitialize(tasks)
-                #konami.main()
-                self.intro['complete'] == 1
-                tasks = self.initialize_badge()
+                pass
+                # self.display.ticker.queue('konami code goes here')
+                # self.deinitialize(tasks)
+                # konami.main()
+                # self.intro['complete'] == 1
+                # tasks = self.initialize_badge()
             await asyncio.sleep(5)

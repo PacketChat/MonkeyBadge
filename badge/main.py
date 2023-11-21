@@ -6,4 +6,5 @@ async def main():
     await badge.run()
 
 # Run the main function
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())
