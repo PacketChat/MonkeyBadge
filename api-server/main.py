@@ -100,6 +100,9 @@ class Register(BaseModel):
     key: str
     handle: str
 
+class IntroComplete(BaseModel):
+    myUUID: str
+
 class Checkin(BaseModel):
     myUUID: str
 
@@ -184,6 +187,23 @@ async def changehandle(badge_id, r: Handle):
         await updatefield(badge_id, "badgeHandle", r.handle)
         return str({ "badge_id": badge_id, "message": f"changed handle for {badge_id} to {r.handle}"})
 
+@app.post("/introcomplete")
+async def changehandle(r: IntroComplete, api_key: str = Security(get_api_key)):
+    # use badge_id to lookup json from redis
+    # if there's a result, return the json structure
+    # check if badge_id exists in redis
+    j = await client.json.get(r.myUUID, ".")
+
+    if not j:
+        raise HTTPException(status_code=404, detail="Badge not found")
+    
+    if j['token'] != api_key:
+          raise HTTPException(status_code=404, detail="Badge not found")
+    else:
+        j['intro']['complete'] = 1
+        await client.json.set(r.myUUID, ".", j)
+    return j
+
 @app.post("/register")
 async def register(r: Register):
     # create a new badge in redis from the templateJSON string
@@ -224,7 +244,7 @@ async def checkIn(r: Checkin, api_key: str = Security(get_api_key)):
         raise HTTPException(status_code=404, detail="Badge not found")
     
     if j['token'] != api_key:
-          raise HTTPException(status_code=400, detail="API Key mismatch")
+          raise HTTPException(status_code=400, detail="Badge not found")
     else:
         if check_intro_started() == True:
             j['intro']['enabled'] = 1
@@ -282,6 +302,8 @@ async def getpairingmodebadges(badge_id):
     else:
         raise HTTPException(status_code=400, detail="Matchmode not enabled")
 
+
+    
 @app.post("/match/{badge_id}")
 async def match(badge_id, r: Match):
     # this call will be used to match badges, the request body will contain the target badge id and a key
