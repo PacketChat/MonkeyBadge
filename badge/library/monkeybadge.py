@@ -8,13 +8,14 @@ import ussl as ssl
 import ujson as json
 import uasyncio as asyncio
 
-from library.display import DisplayHandler
-from library.menu import Menu, MenuItem
-from library.leds import LEDHandler
-from library.wifi import WiFiManager
+from library import konami
 from library.button import ButtonHandler
-from library.radio import SI470X
 from library.db import dbtree
+from library.display import DisplayHandler
+from library.leds import LEDHandler
+from library.menu import Menu, MenuItem
+from library.radio import SI470X
+from library.wifi import WiFiManager
 
 #from library.ir_rx.nec import NEC_16 as NECRx
 import config  # Import the config file
@@ -45,7 +46,7 @@ class MonkeyBadge:
         print("Badge Booting")
         self.display.print_logo()
 
-        self.leds.set_led_lights('do_boot_sequence')
+        # self.leds.set_led_lights('do_boot_sequence')
 
         self.registration_key = config.REG_KEY
         self.current_menu = None
@@ -61,7 +62,7 @@ class MonkeyBadge:
         self.challenge1 = {}
         self.challenge2 = {}
         self.challenge3 = {}
-        self.intro = {"intro_complete": False, "intro_enabled": False}
+        self.intro = {"complete": False, "enabled": False}
 
         # use the mac as the UUID
         self.macid = re.sub(':', '-', str(self.wifi_manager.get_mac()))
@@ -112,10 +113,16 @@ class MonkeyBadge:
             MenuItem("OTA Update", "pass"),
             MenuItem("Reset Badge", "pass")
         ])
+
+        def _lightshow(name, *args, **kwargs):
+            def _f():
+                self.leds.set_led_lights(name, *args, **kwargs)
+                return self.current_menu
+            return _f
+
         self.lightshow_menu.items.extend([
-            MenuItem("popcorn", self.leds.do_popcorn_effect),
-            MenuItem("strobe", self.leds.do_strobe),
-            MenuItem("roll call", self.leds.do_monkey_roll_call)
+            MenuItem("popcorn", _lightshow('do_popcorn_effect')),
+            MenuItem("roll call", _lightshow('do_monkey_roll_call')),
         ])
 
     def lock_station(self, freq):
@@ -250,35 +257,35 @@ class MonkeyBadge:
             self.db.set("state", json.dumps(new_state))
             print("wrote gamestate to localdb")
 
-    async def load_gamestate(self):
-        while True:
-            if self.apitoken:
-                j = json.loads(self.db.get("state"))
-                if j:
-                    print("loaded gamestate from localdb")
-                    #print(f"type: {type(j)} data: {j}")
-                    self.handle = j['badgeHandle']
-                    self.apitoken = j['token']
-                    self.IR_ID = j['IR_ID']
-                    self.current_challenge = j['current_challenge']
-                    self.challenge1 = j['challenge1']
-                    self.challenge2 = j['challenge2']
-                    self.challenge3 = j['challenge3']
-                    self.intro = j['intro']
-                else:
-                    print("No state to load")
-                print(f"{self.intro}")
-                if self.current_challenge == "intro" and self.intro['enabled'] == 1 and self.intro['complete'] == 0:
-                    print("Konami code goes here")
+    def load_gamestate(self, payload=None):
+        if payload:
+            print('loading from argument')
+            j = payload
+        else:
+            state = self.db.get('state')
+            if not state:
+                return
+            j = json.loads(state)
 
-            await asyncio.sleep(config.LOAD_GAMESTATE_PERIOD)  # non-blocking wait for 1 minute
-
+        if j:
+            print("loaded gamestate from localdb")
+            self.handle = j['badgeHandle']
+            self.apitoken = j['token']
+            self.IR_ID = j['IR_ID']
+            self.current_challenge = j['current_challenge']
+            self.challenge1 = j['challenge1']
+            self.challenge2 = j['challenge2']
+            self.challenge3 = j['challenge3']
+            self.intro = j['intro']
+        else:
+            print("No state to load")
 
     async def checkin(self):
         """
         Checkin with the MonkeyBadge server API
         """
         while True:
+            print('checkin loop')
             if self.wifi_manager.isWifiConnected():
                 if not self.apitoken:
                     print("No API token, registering badge")
@@ -293,9 +300,9 @@ class MonkeyBadge:
                     r = requests.post(baseurl + "/checkin",
                                     headers={'X-API-Key': self.apitoken },
                                     json={"myUUID": self.badge_uuid})
-                    #print(f"server response: {r.text}")
                     if r.status_code == 200:
                         self.save_gamestate(r.text)
+                        self.load_gamestate(r.json())
                         print("badge checked in.")
                     else:
                         print("badge not registered.")
@@ -303,13 +310,14 @@ class MonkeyBadge:
                     print("Error making API call:", e)
             else:
                 print("Wifi is not connected, skipping checkin.")
-            await asyncio.sleep(config.CHECKIN_PERIOD)  # non-blocking wait for 1 minute
+            await asyncio.sleep(config.CHECKIN_PERIOD)
 
     async def wifi_check(self):
         """
         Checkin with the MonkeyBadge server API
         """
         while True:
+            print('wifi check loop')
             if self.wifi_manager.isWifiConnected():
                 self.display.set_wifi_status(
                         self.wifi_manager.get_wifi_strength())
@@ -321,12 +329,9 @@ class MonkeyBadge:
                     self.display.set_wifi_status(None)
             await asyncio.sleep(60)
 
-    async def run(self):
-
-        # Setup WiFi
-        await self.wifi_manager.connect()
-
-        print(f"Radio tuned to {self.radio.getFreq()}")
+    def initialize_badge(self):
+        """Do the whole setup thing dawg"""
+        self.load_gamestate()
 
         # Setup button handler
         self.button_handler = ButtonHandler(config.BUTTON_PINS)
@@ -335,12 +340,39 @@ class MonkeyBadge:
         # Create tasks
         button_check_task = asyncio.create_task(self.button_handler.check_buttons())
         checkin_task = asyncio.create_task(self.checkin())
-        state_task = asyncio.create_task(self.load_gamestate())
         network_check_task = asyncio.create_task(self.wifi_check())
+        tasks = {
+                'button_check_task': button_check_task,
+                'checkin_task': checkin_task,
+                'network_check_task': network_check_task
+        }
 
         # always boot up to the main menu.
         self.current_menu = self.main_menu
         self._update_display()
 
+        return tasks
+
+    def deinitialize(self, tasks):
+        for task in tasks.values():
+            task.cancel()
+
+    async def run(self):
+        tasks = self.initialize_badge()
+        # main controller
         while True:
-            await asyncio.gather(button_check_task, checkin_task, state_task, network_check_task)
+            for task in tasks:
+                if tasks[task].done():
+                    print(f'error: {task}')
+            print('game loop')
+            self.display.ticker.queue('konami code does not go here')
+            print(self.intro)
+            if self.current_challenge == "intro" and \
+                    self.intro['enabled'] == 1 and \
+                    self.intro['complete'] == 0:
+                self.display.ticker.queue('konami code goes here')
+                self.deinitialize(tasks)
+                konami.main()
+                self.intro['complete'] == 1
+                tasks = self.initialize_badge()
+            await asyncio.sleep(5)

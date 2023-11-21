@@ -27,6 +27,9 @@ class Ticker:
                 tb = tb[1:] + self._queue.pop(0)
             except IndexError:
                 # nothing in the queue
+                if set(tb) == set(' '):
+                    time.sleep_ms(sleep_time)
+                    continue
                 tb = tb[1:] + ' '
             for i in range(0, 8, self.frame_skip):
                 fb.fill(0)

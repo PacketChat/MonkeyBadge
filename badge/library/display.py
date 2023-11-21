@@ -81,7 +81,7 @@ class DisplayHandler:
         # header status
         self.muted = False
         self.ir_status = False
-        self.wifi_status = 0
+        self.wifi_status = None
 
         # body state
         self.menu_items = []
@@ -125,6 +125,7 @@ class DisplayHandler:
         for fb in self.ticker.ticker():
             self.display.blit(fb, 0, 56)
             self.display.show()
+            await asyncio.sleep(0)
 
     def _update_status(self):
         if self.fullscreen:
