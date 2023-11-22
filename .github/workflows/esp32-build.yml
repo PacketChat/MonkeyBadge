@@ -1,0 +1,44 @@
+on:
+  pull_request:
+    types: 
+      - closed
+    branches: 
+      - 'main'
+    paths:
+      - 'board/**'
+      - 'badge/**'
+  push:
+    paths:
+      - 'board/**'
+      - 'badge/**'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout MonkeyBadge
+      uses: actions/checkout@v4
+
+    - name: Checkout MicroPython
+      uses: actions/checkout@v4
+      with:
+        path: micropython
+        repository: micropython/micropython
+        submodules: 'recursive'
+
+    - name: set release date
+      run: |  
+        echo "RELEASE_DATE=$(date +%Y-%m-%d.%s)" >> ${GITHUB_ENV}  
+
+    - name: Install packages
+      run: source micropython/tools/ci.sh && ci_esp32_idf50_setup
+
+    - name: Build
+      run: |
+        source micropython/tools/ci.sh && source esp-idf/export.sh && \
+        cd micropython/ports/esp32 && rm -rf build && \
+        idf.py -D MICROPY_BOARD_DIR=`pwd`/board -D MICROPY_BOARD=monkeybadge \
+        -D CONFIG_APP_PROJECT_VER=${{ env.RELEASE_DATE }}  \
+        -D SOURCE_DATE_EPOCH="${{ env.RELEASE_DATE }}; MB:1.7"
