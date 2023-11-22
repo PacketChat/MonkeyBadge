@@ -18,6 +18,9 @@ from uuid import UUID
 
 myUUID = uuid.uuid4()
 
+redishost = os.environ.get('MB_REDIS_HOST', '127.0.0.1')
+redisport = os.environ.get('MB_REDIS_PORT', '6379')
+
 registration_key = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
 
 uber1uuid = "bb4a84dc-cf4b-4d04-84fd-1c1cc8799e0d"
@@ -79,7 +82,7 @@ def check_intro_started():
 
 api_key_header = APIKeyHeader(name="X-API-Key")
 
-client = coredis.Redis(host='127.0.0.1', port=6379)
+client = coredis.Redis(host=redishost, port=redisport)
 
 class Admin(BaseModel):
     key: str

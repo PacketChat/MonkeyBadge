@@ -4,6 +4,10 @@ from hrid import HRID
 import uuid
 import secrets
 import coredis
+import os
+
+redishost = os.environ.get('MB_REDIS_HOST', '127.0.0.1')
+redisport = os.environ.get('MB_REDIS_PORT', '6379')
 
 uberbadges = {
     "uber1": "bb4a84dc-cf4b-4d04-84fd-1c1cc8799e0d",
@@ -28,7 +32,7 @@ def generate_handle():
     handle = hruuid.generate()
     return handle
 
-client = coredis.Redis(host='127.0.0.1', port=6379)
+client = coredis.Redis(host=redishost, port=redisport)
 
 registration_key = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
 handle = generate_handle()
