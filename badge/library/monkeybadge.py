@@ -1,5 +1,6 @@
 from machine import Pin
 import micropython
+import time
 
 import ujson as json
 import uasyncio as asyncio
@@ -9,6 +10,7 @@ from library.button import ButtonHandler
 from library.db import dbtree
 from library.display import DisplayHandler
 from library.leds import LEDHandler
+from library.ir import IR
 from library.menu import Menu, MenuItem
 from library.radio import SI470X
 from library.wifi import WiFiManager
@@ -35,30 +37,31 @@ class MonkeyBadge:
 
         # Display Init
         self.display = DisplayHandler(config.OLED_WIDTH, config.OLED_HEIGHT, config.OLED_SDA_PIN, config.OLED_SCL_PIN)
-        
+
         # Led init
         self.leds = LEDHandler()
+
+        # IR
+        self.infrared = IR()
+        self.seen_badges = dict()
 
         # boot
         print("Badge Booting")
         self.display.print_logo()
 
-        # self.leds.set_led_lights('do_boot_sequence')
 
         self.registration_key = config.REG_KEY
         self.current_menu = None
-        self.ir_enabled = False
 
         # Need to pull these from the db store.
         try:
             self.apitoken = self.db.get("token")
         except:
             print("Unable to load token: badge not registered.")
-            self.apitoken = None 
-               
+            self.apitoken = None
+
         self.lock_radio_station = False
         self.handle = ""
-        self.IR_ID = ""
         self.current_challenge = None
         self.challenge1 = {}
         self.challenge2 = {}
@@ -76,6 +79,7 @@ class MonkeyBadge:
         self.settings_menu = Menu([], title="Settings", parent=self.main_menu)
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
         self.ir_menu = Menu([], title="Infrared", parent=self.main_menu)
+        self.social_menu = Menu([], title="Social", parent=self.main_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
 
         self.volume_menu = Menu([], title="Volume", parent=self.radio_menu)
@@ -89,7 +93,8 @@ class MonkeyBadge:
             MenuItem("Settings", submenu=self.settings_menu),
             MenuItem("Lightshow", submenu=self.lightshow_menu),
             MenuItem("IR", submenu=self.ir_menu),
-            MenuItem("About", submenu=self.about_menu)
+            MenuItem("Social", submenu=self.social_menu),
+            MenuItem("About", submenu=self.about_menu),
         ])
         self.about_menu.items.extend([
             MenuItem("Version", "pass"),
@@ -99,6 +104,10 @@ class MonkeyBadge:
         self.ir_menu.items.extend([
             MenuItem("Send Message", "pass"),
             MenuItem("Receive Message", "pass")
+        ])
+        self.social_menu.items.extend([
+            MenuItem("Find Badges", self.find_badges),
+            MenuItem("Seen Badges", self.seen_badges_action),
         ])
         self.radio_menu.items.extend([
             MenuItem("Frequency", self.donothing, dynamic_text=self.display_freq),
@@ -126,6 +135,14 @@ class MonkeyBadge:
             MenuItem("roll call", _lightshow('do_monkey_roll_call')),
             MenuItem("heartbeat", _lightshow('do_heartbeat')),
         ])
+
+    @property
+    def infrared_id(self):
+        self.infrared.self_addr
+
+    @infrared_id.setter
+    def infrared_id(self, addr):
+        self.infrared.set_my_address(addr)
 
     def lock_station(self, freq):
         self.lock_radio_station = True
@@ -164,6 +181,22 @@ class MonkeyBadge:
     def display_vol(self):
         return f"Volume: {self.radio.volume}"
 
+    # social wrappers
+    def find_badges(self):
+        n = self.infrared.send_discover()
+        if n == 0:
+            self.display.ticker.queue('ir not enabled')
+
+    def seen_badges_action(self):
+        now = time.ticks_ms()
+        sbmenu = Menu([], 'Seen Badges', parent=self.current_menu)
+        sbmenu.items.extend([
+            MenuItem(f'{badge}: {time.ticks_diff(now, last_seen)//1000}s ago')
+            for badge, last_seen in self.seen_badges.items()
+        ])
+        return sbmenu
+
+    # noop
     def donothing(self):
         return self.current_menu
 
@@ -213,8 +246,8 @@ class MonkeyBadge:
         except:
             print("Unable to load saved state: not found.")
             current_state = ""
-        print(f"Current State {type(current_state)}: {current_state}")
-        print(f"New State {type(state)}: {state}")
+        # print(f"Current State {type(current_state)}: {current_state}")
+        # print(f"New State {type(state)}: {state}")
 
         if current_state == state:
             print("gamestate unchanged")
@@ -236,7 +269,9 @@ class MonkeyBadge:
             print("loaded gamestate from localdb")
             self.handle = j['badgeHandle']
             self.apitoken = j['token']
-            self.IR_ID = j['IR_ID']
+            if j['IR_ID'] != self.infrared_id:
+                self.display.ticker.queue(f'new irid: {self.infrared_id}')
+            self.infrared_id = j['IR_ID']
             self.current_challenge = j['current_challenge']
             self.challenge1 = j['challenge1']
             self.challenge2 = j['challenge2']
@@ -260,6 +295,13 @@ class MonkeyBadge:
             self.db.set("token", self.apitoken)
         else:
             print("registration failed")
+
+    def clean_seen_badges(self):
+        """Cleans badges we haven't seen in a while"""
+        now = time.ticks_ms()
+        for badge, last_seen in self.seen_badges.items():
+            if time.ticks_diff(now, last_seen) > config.CLEAN_BADGE_AFTER:
+                del self.seen_badges[badge]
 
     async def checkin(self):
         """
@@ -332,6 +374,7 @@ class MonkeyBadge:
             task.cancel()
 
     async def run(self):
+        # self.leds.set_led_lights('do_boot_sequence')
         tasks = self.initialize_badge()
         # main controller
         while True:
@@ -339,8 +382,6 @@ class MonkeyBadge:
                 if tasks[task].done():
                     print(f'error: {task}')
             print('game loop')
-            self.display.ticker.queue('konami code does not go here')
-            print(self.intro)
             if self.current_challenge == "intro" and \
                     self.intro['enabled'] == 1 and \
                     self.intro['complete'] == 0:
