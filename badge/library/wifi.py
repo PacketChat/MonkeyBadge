@@ -19,9 +19,10 @@ class WiFiManager:
         Connect to the WiFi network
         :return: None
         """
+        self.wlan.active(False)
         self.wlan.active(True)
         if not self.wlan.isconnected():
-            print('Connecting to network...')
+            print('Connecting to network {}...'.format(self.ssid))
             self.wlan.connect(self.ssid, self.password)
 
             # Timeout implementation

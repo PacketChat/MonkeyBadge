@@ -12,6 +12,8 @@ from library.wifi import WiFiManager
 from library.button import ButtonHandler
 from library.radio import SI470X
 from library.db import dbtree
+from library.ota.update import OTA as OTAUpdate
+import library.ota.rollback as OTARollback
 
 #from library.ir_rx.nec import NEC_16 as NECRx
 import config  # Import the config file
@@ -23,6 +25,10 @@ class MonkeyBadge:
         Initalize the MonkeyBadge class - this class is used to interact with the MonkeyBadge server API
         :param uuid: The UUID of the badge
         """
+        # define URL with factory reset endpoint
+        self.reset_url = config.RESET_URL
+        self.update_url = config.UPDATE_URL
+
         # radio init
         self.radio = SI470X()
         self.radio.setVolume(1)
@@ -67,6 +73,9 @@ class MonkeyBadge:
         self.badge_uuid = self.macid
         print("Badge UUID: %s" % (self.badge_uuid))
 
+        print("Confirming firmware boot success. Cancelling OTA Rollback")
+        OTARollback.cancel()
+
         # Menu Definitions
         self.main_menu = Menu([], title="Main")
         self.radio_menu = Menu([], title="Radio", parent=self.main_menu)
@@ -108,8 +117,8 @@ class MonkeyBadge:
             MenuItem("LED Brightness", "pass"),
             #        MenuItem("Volume", "pass"),
             MenuItem("Debounce", "pass"),
-            MenuItem("OTA Update", "pass"),
-            MenuItem("Reset Badge", "pass")
+            MenuItem("OTA Update", self.update_badge),
+            MenuItem("Reset Badge", self.reset_badge)
         ])
         self.lightshow_menu.items.extend([
             MenuItem("popcorn", self.leds.do_popcorn_effect),
@@ -147,6 +156,40 @@ class MonkeyBadge:
             self.radio.seekDown()
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
+
+    def flash_badge(self, url, verbose=False):
+        #TODO: change the state of the screen to show that the badge is updating and resetting
+        try:
+            #print(OTAStatus.status())
+            with OTAUpdate(reboot=True, verbose=verbose) as ota:
+                ota.from_json(url)
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+#            if err == -202:
+#                print("Unable to process update: Network Error")
+#            else:
+#                print("Unable to flash device %s" % (err))
+
+    def update_badge(self):
+        print("Applying over the air (OTA) Update...")
+        self.display.print_lines(["", "  Applying OTA", "     Update  "])
+        self.flash_badge(self.update_url)
+
+    def reset_badge(self):
+        import os
+        from flashbdev import bdev
+
+        # MicroPython's partition table uses "vfs"
+        # This effectively "formats" the flash
+        print("Erasing Flash...")
+        os.VfsFat.mkfs(bdev)
+        print("Erasing Non Volatile Storage (NVS)...")
+        config.eraseNVS("API_SERVER")
+        config.eraseNVS("WIFI_SSID")
+        config.eraseNVS("WIFI_PASSWORD")
+        print("Applying Factory Firmware...")
+        self.display.print_lines(["", "Applying Factory", "    Firmware"])
+        self.flash_badge(self.reset_url)
 
     def display_freq(self):
         return f"FM: {self.radio.getFreq()}"
