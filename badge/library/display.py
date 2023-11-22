@@ -122,10 +122,11 @@ class DisplayHandler:
             self.body.text(text, 0, 8 * j, 1)
 
     async def _update_from_ticker(self):
-        for fb in self.ticker.ticker():
-            self.display.blit(fb, 0, 56)
-            self.display.show()
-            await asyncio.sleep(0)
+        for (fb, sleep_time) in self.ticker.ticker():
+            if fb:
+                self.display.blit(fb, 0, 56)
+                self.display.show()
+            await asyncio.sleep_ms(sleep_time)
 
     def _update_status(self):
         if self.fullscreen:

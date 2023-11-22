@@ -1,6 +1,5 @@
 """oled ticker lib"""
 import framebuf
-import time
 
 TIME_PER_CHAR = 200
 
@@ -28,14 +27,13 @@ class Ticker:
             except IndexError:
                 # nothing in the queue
                 if set(tb) == set(' '):
-                    time.sleep_ms(sleep_time)
+                    yield None, sleep_time
                     continue
                 tb = tb[1:] + ' '
             for i in range(0, 8, self.frame_skip):
                 fb.fill(0)
                 fb.text(tb, 8 - i, 0, 1)
-                yield fb
-                time.sleep_ms(sleep_time)
+                yield fb, sleep_time
 
     def queue(self, msg):
         if self._queue:
