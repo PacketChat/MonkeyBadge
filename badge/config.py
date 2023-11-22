@@ -1,9 +1,49 @@
 """configuration settings"""
 from collections import namedtuple
+from esp32 import NVS
+
+nvs = NVS("monkeybadge")
+WIFI_SSID = "HushCon"
+WIFI_PASSWORD = "ThreeAmigos"
+API_SERVER = "https://update.kafka.tel/api"
+
+def setNVS(key, value):
+    nvs.set_blob(key, value)
+    nvs.commit()
+
+def getNVS(key, size):
+    b = bytearray(size)
+    nvs.get_blob(key, b)
+    value = b.decode("utf-8").strip('\x00')
+    del b
+    return value
+
+def eraseNVS(key):
+    try:
+        nvs.erase_key(key)
+    except:
+        # TODO: if we don't mask this users will likely see they can modify the value "API_SERVER"
+        # pass
+        print("Unable to erase key {}".format(key))
 
 # Wifi Config
-WIFI_SSID = "WillHouse6"
-WIFI_PASSWORD = "williams123"
+try:
+    WIFI_SSID = getNVS("WIFI_SSID", 32)
+except:
+    pass
+
+try:
+    WIFI_PASSWORD = getNVS("WIFI_PASSWORD", 63)
+except:
+    pass
+
+try:
+    API_SERVER = getNVS("API_SERVER", 255)
+except:
+    pass
+
+RESET_URL = "https://update.kafka.tel/firmware/reset.json"
+UPDATE_URL = "https://update.kafka.tel/firmware/update.json"
 
 # badge config
 REG_KEY = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
