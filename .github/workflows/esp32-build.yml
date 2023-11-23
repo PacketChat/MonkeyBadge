@@ -1,3 +1,4 @@
+name: Perform firmware build on GitHub Actions (native)
 on:
   pull_request:
     types: 
@@ -9,6 +10,7 @@ on:
       - 'badge/**'
   push:
     paths:
+      - '.github/workflows/esp32-build.yml'
       - 'board/**'
       - 'badge/**'
 
@@ -32,13 +34,44 @@ jobs:
       run: |  
         echo "RELEASE_DATE=$(date +%Y-%m-%d.%s)" >> ${GITHUB_ENV}  
 
-    - name: Install packages
-      run: source micropython/tools/ci.sh && ci_esp32_idf50_setup
+    - name: esp-idf build
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.0.4
+        target: esp32
+        path: micropython/ports/esp32
+        command:  make -C micropython/ports/esp32 BOARD_DIR=${{ github.workspace}}/board BOARD=monkeybadge CONFIG_APP_PROJECT_VER=${{ env.RELEASE_DATE }} all
 
-    - name: Build
+    - name: Collect Assets
       run: |
-        source micropython/tools/ci.sh && source esp-idf/export.sh && \
-        cd micropython/ports/esp32 && rm -rf build && \
-        idf.py -D MICROPY_BOARD_DIR=`pwd`/board -D MICROPY_BOARD=monkeybadge \
-        -D CONFIG_APP_PROJECT_VER=${{ env.RELEASE_DATE }}  \
-        -D SOURCE_DATE_EPOCH="${{ env.RELEASE_DATE }}; MB:1.7"
+        mkdir -p ${{ github.workspace }}/dist 
+        cp ${{ github.workspace }}/micropython/ports/esp32/build-monkeybadge/firmware.bin ${{ github.workspace }}/dist/firmware_${{ env.RELEASE_DATE }}.bin
+        cp ${{ github.workspace }}/micropython/ports/esp32/build-monkeybadge/micropython.bin ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.bin
+        SHA256SUM=$(sha256sum ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.bin | awk '{print $1}')
+        FSIZE=$(find  -L * -name ota_update_${{ env.RELEASE_DATE }}.bin -printf '%s\n')
+        jq  -n --arg fsize "${FSIZE}" --arg sha "${SHA256SUM}" --arg fname ota_update_${{ env.RELEASE_DATE }}.bin '{"firmware": $fname, "sha": $sha, "length": $fsize}' | tee ${{ github.workspace}}/dist/ota_update_${{ env.RELEASE_DATE }}.json
+        echo "SHA256SUM=$SHA256SUM" | tee -a ${GITHUB_ENV}
+
+    - name: Upload Artifacts - Zip Bundle
+      uses: actions/upload-artifact@v3
+      with: 
+        name: ota_update_${{ env.RELEASE_DATE }}
+        path: ${{ github.workspace }}/dist/**
+
+    - name: Upload Artifacts - Over the Air (OTA) binary update
+      uses: actions/upload-artifact@v3
+      with:
+        name: ota_update_${{ env.RELEASE_DATE }}.bin
+        path: ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.bin
+
+    - name: Upload Artifacts - OTA JSON Manifest
+      uses: actions/upload-artifact@v3
+      with:
+        name: ota_update_${{ env.RELEASE_DATE }}.json
+        path: ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.json
+
+    - name: Upload Artifacts - Full binary firmware
+      uses: actions/upload-artifact@v3
+      with:
+        name: firmware_${{ env.RELEASE_DATE }}.bin
+        path: ${{ github.workspace }}/dist/firmware_${{ env.RELEASE_DATE }}.bin
