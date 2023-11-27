@@ -3,6 +3,16 @@ import ubinascii
 import uasyncio as asyncio
 import utime  # MicroPython module for time functions
 
+def get_mac(wlan):
+    """
+    Get the MAC address of the WiFi interface
+
+    :return: The MAC address of the WiFi interface
+    """
+    return ubinascii.hexlify(wlan.config('mac'), ':').decode()
+
+
+
 class WiFiManager:
     def __init__(self, ssid, password):
         """

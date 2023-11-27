@@ -5,8 +5,9 @@ import time
 import uasyncio as asyncio
 
 import config
-from library.ir_tx.nec import NEC as NECTx
 from library.ir_rx.nec import NEC_16 as NECRx
+from library.ir_tx.nec import NEC as NECTx
+from library.threadsafe_queue import ThreadSafeQueue
 
 class BadMessage(Exception):
     """Raised if a bad message is received"""
@@ -24,6 +25,7 @@ class IRMessage:
         self.sender = sender
         self.extra = []
         self.bad_message = False
+        self.finished = False
         try:
             self.opcode = config.REV_IR_OPCODES[opcode]
         except KeyError:
@@ -58,33 +60,42 @@ class IRMessage:
         return self.opcode, self.sender, self.extra
 
 class IR:
-    def __init__(self, self_addr):
+    def __init__(self, self_addr=None):
         self.enabled = False
         self.pairing = False
         self.monkey_mode = False
         self.hiddren_objects = False
 
-        self.tx = NECTx(Pin(config.IR_TX_PIN, Pin.Out))
+        self.tx = NECTx(Pin(config.IR_TX_PIN, Pin.OUT))
         self.rx = None
         self.partials = {}
         self.self_addr = self_addr
         self.msgs = []
+        self._q = ThreadSafeQueue([0] * 20)
 
     def __schedule_recv(self, *args):
-        micropython.schedule(self.recv, args)
+        print('isr recv', args)
+        if not self._q.full():
+            self._q.put_sync(args)
 
-    def _keep_message(self, opcode, sender, extra):
-        opcode_name = config.REV_IR_OPCODES[opcode]
-        if opcode_name == 'MONKEY' and not self.monkey_mode:
+    def __schedule_recv_sync(self, *args):
+        print('isr recv', args)
+        micropython.schedule(self.recv_sync, args)
+
+
+    def _keep_message(self, opcode, _sender, _extra):
+        if opcode == 'MONKEY' and not self.monkey_mode:
             return False
-        if opcode_name == 'HIDDEN_OBJECT' and not self.hiddren_objects:
+        if opcode == 'HIDDEN_OBJECT' and not self.hiddren_objects:
             return False
-        if opcode_name == 'INIT_PAIR' and not self.pairing:
+        if opcode == 'INIT_PAIR' and not self.pairing:
             return False
         return True
 
-    def recv(self, addr, data):
-        # ignore messages received from my own transmitter
+    def recv_sync(self, args):
+        data, addr, _ = args
+        print('ir recv', data, addr)
+        # don't do anything if I sent this packet
         if addr == self.self_addr:
             return
         try:
@@ -98,9 +109,9 @@ class IR:
         except (OverDelay, BadMessage):
             # treat this as a new message
             del self.partials[addr]
-            self.recv(addr, data)
+            self.recv_sync((data, addr, _))
 
-        if self.partials[addr].finalized:
+        if self.partials[addr].finished:
             msg = self.partials[addr].message()
             # filter out non-enabled messages
             if self._keep_message(*msg):
@@ -109,16 +120,28 @@ class IR:
 
     def send(self, data):
         """Send data over IR, data should be a list of uint8"""
-        if not self.enabled:
-            return
+        print('sending as', self.self_addr)
+        if not self.enabled or not self.self_addr:
+            return None
         for item in data:
+            print(self.self_addr, item)
             self.tx.transmit(self.self_addr, item)
             time.sleep_ms(config.IR_TX_DELAY)
+        return len(data)
+
+    def set_my_address(self, addr):
+        """Set my IR identifier"""
+        self.self_addr = addr
 
     def send_discover(self):
         """Sends a discover packet"""
         data = [config.IR_OPCODES['DISCOVER'].code]
-        self.send(data)
+        return self.send(data)
+
+    def send_here(self):
+        """Sends a here packet"""
+        data = [config.IR_OPCODES['HERE'].code]
+        return self.send(data)
 
     def send_emote(self, dst, emote):
         """Stretch goal: send an emote"""
@@ -136,6 +159,13 @@ class IR:
         self.enabled = True
         self.rx = NECRx(Pin(config.IR_RX_PIN),
                         self.__schedule_recv)
+
+    def enable_sync(self):
+        """Enable IR Recv"""
+        self.enabled = True
+        self.rx = NECRx(Pin(config.IR_RX_PIN),
+                        self.__schedule_recv_sync)
+
 
     def disable(self):
         """Disable IR Recv"""

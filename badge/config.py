@@ -10,8 +10,7 @@ WIFI_PASSWORD = 'get 0ff my l4wn'
 # badge config
 REG_KEY = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
 API_SERVER = "http://192.168.184.183:8000"
-# CHECKIN_PERIOD = 60
-CHECKIN_PERIOD = 5
+CHECKIN_PERIOD = 60000
 BUTTON_PINS = [4, 14, 15, 13]
 BUTTON_PIN_DESCRIPTIONS = [
         "left up",
@@ -64,3 +63,5 @@ REV_IR_OPCODES = {val.code: key for key, val in IR_OPCODES.items()}
 IR_TX_DELAY = 115  # delay between tx pulses in ms
 # messages received after this much delay (in ms) become a new message
 IR_RX_MAX_DELAY = 250
+
+CLEAN_BADGE_AFTER = 120000  # 120s
