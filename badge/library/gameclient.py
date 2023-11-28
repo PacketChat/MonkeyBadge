@@ -2,7 +2,7 @@ import urequests as requests
 import usocket as socket
 import ussl as ssl
 import ujson as json
-import config 
+import config
 
 
 class GameClient:
@@ -24,17 +24,17 @@ class GameClient:
         else:
             request_body['handle'] = "unnamed_monkey"
 
-        print(f"connecting to {request_url}")           
+        print(f"connecting to {request_url}")
         print(f"Sending JSON Values: {request_body}")
 
         r = requests.post(request_url,
                           json=request_body)
-        
+
         if r.status_code == 200:
             return r.json()
         else:
             None
-        
+
 
     def checkin(self, apitoken, uuid):
         """
@@ -47,25 +47,25 @@ class GameClient:
         request_body = {
             "myUUID": uuid
             }
-        
+
         r = self.secure_api_request(request_url, apitoken, request_body)
-        
+
         if r.status_code == 200:
             return r.json()
         else:
             None
 
     def konami_complete(self, token, uuid):
-        request_url = self.baseurl + "/konamicomplete"
+        request_url = self.baseurl + "/introcomplete"
         print(f"connecting to {request_url}")
         print(f"token: {token}, uuid: {uuid}")
 
         request_body = {
-            "myUUID": self.badge_uuid
+            "myUUID": uuid
             }
-        
+
         r = self.secure_api_request(request_url, token, request_body)
-        
+
         if r.status_code == 200:
             return r.json()
         else:
@@ -75,7 +75,7 @@ class GameClient:
         """
         Send a request to the MonkeyBadge server API
         """
-        header = {'X-API-Key': token }
+        header = {'X-API-Key': token}
 
         print(f"API Call to {url}")
         print(f"header: {token}\n body: {json}")
@@ -83,5 +83,5 @@ class GameClient:
         r = requests.post(url,
                         headers=header,
                         json=json)
-        
+
         return r

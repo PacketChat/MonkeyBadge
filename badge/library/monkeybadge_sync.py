@@ -6,7 +6,7 @@ import time
 import ujson as json
 
 from library.ir import IR
-#from library import konami
+from library import konami
 from library.button import ButtonHandler
 from library.db import dbtree
 from library.display import DisplayHandler
@@ -28,6 +28,9 @@ class MonkeyBadge:
         Initalize the MonkeyBadge class - this class is used to interact with the MonkeyBadge server API
         :param uuid: The UUID of the badge
         """
+        # anything in the calls queue should return true on success and false
+        # on failure
+        self._calls_queue = list()
         # radio init
         self.radio = SI470X()
         self.radio.setVolume(1)
@@ -97,6 +100,9 @@ class MonkeyBadge:
             MenuItem("Volume Up", self.menu_volume_up),
             MenuItem("Volume Down", self.menu_volume_down)
         ])
+        self.challenge_menu = Menu([],
+                                     title='Chlng Status',
+                                     parent=self.about_menu)
         self.main_menu.items.extend([
             MenuItem("Radio", submenu=self.radio_menu),
             MenuItem("Settings", submenu=self.settings_menu),
@@ -107,6 +113,7 @@ class MonkeyBadge:
         ])
         self.about_menu.items.extend([
             MenuItem("Version", self.display_menu('Version', __version__)),
+            MenuItem("Chllnge Status", submenu=self.challenge_menu),
             MenuItem("Credits", self.display_menu('Credits',
                                                   'temtel',
                                                   'crackerjack',
@@ -350,11 +357,15 @@ class MonkeyBadge:
             self.handle = j['badgeHandle']
             self.apitoken = j['token']
             self.infrared_id = j['IR_ID']
-            self.current_challenge = j['current_challenge']
+            if self.intro['complete'] != j['intro']['complete'] and \
+                    j['intro']['complete']:
+                self.challenge_menu.items.append(MenuItem('Intro Complete',
+                                                          self.donothing))
+            self.intro = j['intro']
             self.challenge1 = j['challenge1']
             self.challenge2 = j['challenge2']
             self.challenge3 = j['challenge3']
-            self.intro = j['intro']
+            self.current_challenge = j['current_challenge']
         else:
             print("No state to load")
 
@@ -379,6 +390,15 @@ class MonkeyBadge:
         for badge, last_seen in self.seen_badges.items():
             if time.ticks_diff(now, last_seen) > config.CLEAN_BADGE_AFTER:
                 del self.seen_badges[badge]
+
+    @if_wifi
+    def config_konami_win(self):
+        """We've completed the intro challenge"""
+        j = self.gameclient.konami_complete(self.apitoken, self.badge_uuid)
+        if j is None:
+            return False
+        self.load_gamestate(j)
+        return True
 
     @if_wifi
     def checkin(self):
@@ -447,7 +467,7 @@ class MonkeyBadge:
 
         # return tasks
 
-    def deinitialize(self, tasks):
+    def deinitialize(self):
         self.infrared.disable()
 
     def run(self):
@@ -456,6 +476,13 @@ class MonkeyBadge:
         # main controller
         while True:
             now = time.ticks_ms()
+
+            current_calls = self._calls_queue[:]
+            self._calls_queue = list()
+            for call in current_calls:
+                success = call()
+                if not success:
+                    self._calls_queue.append(call)
 
             # wlan, no blocking
             print(self.wlan.ifconfig()[0], self.last_checkin, now)
@@ -481,13 +508,12 @@ class MonkeyBadge:
 
             # check whether we should move to intro mode
             if self.intro['complete'] == 0 and \
+                    self.config_konami_win not in self._calls_queue and \
                     self.intro['enabled'] == 1 and \
                     self.current_challenge == "intro":
-                pass
-                # print('konami code goes here')
-                # self.deinitialize(tasks)
-                # konami.main()
-                # self.intro['complete'] == 1
-                # tasks = self.initialize_badge()
+                self.deinitialize()
+                konami.main()
+                self.initialize_badge()
+                self._calls_queue.append(self.config_konami_win)
             self.display.refresh()
             time.sleep(5)
