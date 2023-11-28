@@ -362,6 +362,8 @@ class MonkeyBadge:
                 self.challenge_menu.items.append(MenuItem('Intro Complete',
                                                           self.donothing))
             self.intro = j['intro']
+            if not self.infrared.pairing and self.intro['complete']:
+                self.infrared.enable_pairing()
             self.challenge1 = j['challenge1']
             self.challenge2 = j['challenge2']
             self.challenge3 = j['challenge3']
@@ -432,6 +434,9 @@ class MonkeyBadge:
                 elif opcode == 'HERE':
                     self.log = f'HERE: {sender}'
                     self.seen_badges[sender] = time.ticks_ms()
+                elif opcode == 'INIT_PAIR':
+                    self.log = f'PAIR: {sender}'
+                    self.infrared.send_resp_pair(sender)
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
@@ -512,7 +517,7 @@ class MonkeyBadge:
                     self.intro['enabled'] == 1 and \
                     self.current_challenge == "intro":
                 self.deinitialize()
-                konami.main()
+                # konami.main()
                 self.initialize_badge()
                 self._calls_queue.append(self.config_konami_win)
             self.display.refresh()

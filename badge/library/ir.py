@@ -7,7 +7,6 @@ import uasyncio as asyncio
 import config
 from library.ir_rx.nec import NEC_16 as NECRx
 from library.ir_tx.nec import NEC as NECTx
-from library.threadsafe_queue import ThreadSafeQueue
 
 class BadMessage(Exception):
     """Raised if a bad message is received"""
@@ -71,12 +70,6 @@ class IR:
         self.partials = {}
         self.self_addr = self_addr
         self.msgs = []
-        self._q = ThreadSafeQueue([0] * 20)
-
-    def __schedule_recv(self, *args):
-        print('isr recv', args)
-        if not self._q.full():
-            self._q.put_sync(args)
 
     def __schedule_recv_sync(self, *args):
         print('isr recv', args)
@@ -149,23 +142,23 @@ class IR:
         data.extend(dst.to_bytes(2, 'big'))
         self.send(data)
 
-    def initiate_pairing(self):
-        """Sends a pairing request"""
-        data = [config.IR_OPCODES['INIT_PAIR'].code]
+    def send_resp_pair(self, dst):
+        data = [config.IR_OPCODES['RESP_PAIR'].code]
+        data.extend(dst.to_bytes(2, 'big'))
         self.send(data)
 
-    def enable(self):
-        """Enable IR Recv"""
-        self.enabled = True
-        self.rx = NECRx(Pin(config.IR_RX_PIN),
-                        self.__schedule_recv)
+    def initiate_pairing(self):
+        """Sends a pairing request"""
+        if not self.pairing:
+            return
+        data = [config.IR_OPCODES['INIT_PAIR'].code]
+        self.send(data)
 
     def enable_sync(self):
         """Enable IR Recv"""
         self.enabled = True
         self.rx = NECRx(Pin(config.IR_RX_PIN),
                         self.__schedule_recv_sync)
-
 
     def disable(self):
         """Disable IR Recv"""

@@ -60,7 +60,7 @@ IR_OPCODES = {
 }
 REV_IR_OPCODES = {val.code: key for key, val in IR_OPCODES.items()}
 
-IR_TX_DELAY = 115  # delay between tx pulses in ms
+IR_TX_DELAY = 175  # delay between tx pulses in ms
 # messages received after this much delay (in ms) become a new message
 IR_RX_MAX_DELAY = 250
 
