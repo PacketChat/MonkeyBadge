@@ -1,7 +1,8 @@
 """oled ticker lib"""
+from micropython import const
 import framebuf
 
-TIME_PER_CHAR = 200
+TIME_PER_CHAR = const(200)
 
 class Ticker:
     def __init__(self, width=16, tpc=TIME_PER_CHAR, frame_skip=1):
@@ -36,6 +37,4 @@ class Ticker:
                 yield fb, sleep_time
 
     def queue(self, msg):
-        if self._queue:
-            self._queue.extend(' ' * 5)
-        self._queue.extend(msg)
+        self._queue.extend(f'{msg}     ')

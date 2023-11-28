@@ -266,7 +266,7 @@ class MonkeyBadge:
             j = json.loads(state)
 
         if j:
-            print("loaded gamestate from localdb")
+            print("loaded gamestate {}".format(self.infrared_id))
             self.handle = j['badgeHandle']
             self.apitoken = j['token']
             if j['IR_ID'] != self.infrared_id:
@@ -317,7 +317,9 @@ class MonkeyBadge:
                     print("checking in badge")
                     r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
                     if r:
+                        await asyncio.sleep(0)
                         self.save_gamestate(r)
+                        await asyncio.sleep(0)
                         self.load_gamestate(r)
                         print("Badge successfully checked in")
                     else:
@@ -343,6 +345,27 @@ class MonkeyBadge:
                     self.display.set_wifi_status(None)
             await asyncio.sleep(60)
 
+    async def infrared_check(self):
+        while True:
+            if self.infrared.enabled:
+                self.display.set_ir_status(True)
+            else:
+                self.display.set_ir_status(False)
+            await asyncio.sleep(0)
+            if self.infrared.enabled and self.infrared.msgs:
+                print('infrared check')
+                while self.infrared.msgs:
+                    opcode, sender, extra = self.infrared.msgs.pop()
+                    if opcode == 'DISCOVER':
+                        self.infrared.send_here()
+                        self.display.ticker.queue(f'finger: {sender}')
+                    elif opcode == 'HERE':
+                        self.display.ticker.queue(f'seen: {sender}')
+                        self.seen_badges[sender] = time.ticks_ms()
+                    await asyncio.sleep(0)
+            self.clean_seen_badges()
+            await asyncio.sleep(5)
+
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
         self.load_gamestate()
@@ -358,18 +381,26 @@ class MonkeyBadge:
         # Create tasks
         checkin_task = asyncio.create_task(self.checkin())
         network_check_task = asyncio.create_task(self.wifi_check())
+        infrared_task = asyncio.create_task(self.infrared_check())
+        ir_recv_task = asyncio.create_task(self.infrared.recv())
         tasks = {
                 'checkin_task': checkin_task,
-                'network_check_task': network_check_task
+                'network_check_task': network_check_task,
+                'infrared_check_task': infrared_task,
+                'ir_recv_task': ir_recv_task,
         }
 
         # always boot up to the main menu.
         self.current_menu = self.main_menu
         self._update_display()
 
+        # turn on IR Recv
+        self.infrared.enable()
+
         return tasks
 
     def deinitialize(self, tasks):
+        self.infrared.disable()
         for task in tasks.values():
             task.cancel()
 
