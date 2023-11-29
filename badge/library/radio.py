@@ -143,7 +143,6 @@ class SI470X(object):
         i2c=None,
         i2c_addr=0x10,
         reset_pin=machine.Pin(16, machine.Pin.OUT),
-        tuning=None,
         band=BAND_US,
         channel_space=CSPACE_US,
         rds=False,
@@ -167,8 +166,6 @@ class SI470X(object):
         # Powerup sequence.
         self.reset()
         self.initialize()
-        if tuning:
-            self.tune(tuning)
 
     def waitAndFinishTune(self):
         c = 100
@@ -548,7 +545,7 @@ class SI470X(object):
         self.waitAndFinishTune()
 
     def changeVolume(self, delta):
-        self.set_volume(self.volume + delta)
+        self.setVolume(self.volume + delta)
 
     def mute(self):
         self.setVolume(0)
