@@ -1,4 +1,5 @@
 from machine import Pin
+import _thread as thread
 import micropython
 import network
 import time
@@ -28,6 +29,12 @@ class MonkeyBadge:
         Initalize the MonkeyBadge class - this class is used to interact with the MonkeyBadge server API
         :param uuid: The UUID of the badge
         """
+        # Wifi Init
+        self.wlan = network.WLAN(network.STA_IF)
+        self.enable_wifi()
+        # self.wlan.active(True)
+        # self.wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
+
         # anything in the calls queue should return true on success and false
         # on failure
         self._calls_queue = list()
@@ -40,8 +47,6 @@ class MonkeyBadge:
         self.gameclient = GameClient()
         self.last_checkin = -60000
 
-        # Wifi Init
-        self.wlan = network.WLAN(network.STA_IF)
 
         # Display Init
         self.display = DisplayHandler(config.OLED_WIDTH,
@@ -56,6 +61,7 @@ class MonkeyBadge:
         # IR
         self.infrared = IR()
         self.seen_badges = dict()
+        self.friends = dict()
 
         # boot
         print("Badge Booting")
@@ -90,7 +96,7 @@ class MonkeyBadge:
         self.radio_menu = Menu([], title="Radio", parent=self.main_menu)
         self.settings_menu = Menu([], title="Settings", parent=self.main_menu)
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
-        self.ir_menu = Menu([], title="Infrared", parent=self.main_menu)
+        # self.ir_menu = Menu([], title="Infrared", parent=self.main_menu)
         self.social_menu = Menu([], title="Social", parent=self.main_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
 
@@ -107,7 +113,7 @@ class MonkeyBadge:
             MenuItem("Radio", submenu=self.radio_menu),
             MenuItem("Settings", submenu=self.settings_menu),
             MenuItem("Lightshow", submenu=self.lightshow_menu),
-            MenuItem("IR", submenu=self.ir_menu),
+            # MenuItem("IR", submenu=self.ir_menu),
             MenuItem("Social", submenu=self.social_menu),
             MenuItem("About", submenu=self.about_menu),
         ])
@@ -147,13 +153,13 @@ class MonkeyBadge:
                                                   )),
             MenuItem("Log", self.select_log),
         ])
-        self.ir_menu.items.extend([
-            MenuItem("Send Message", "pass"),
-            MenuItem("Receive Message", "pass")
-        ])
         self.social_menu.items.extend([
             MenuItem("Find Badges", self.find_badges),
             MenuItem("Seen Badges", self.seen_badges_action),
+            MenuItem('Init Pair', self.initiate_pair),
+            MenuItem('Pair mode', self.pairing_mode),
+            MenuItem('Friends List', self.display_friends),
+
         ])
         self.radio_menu.items.extend([
             MenuItem("Frequency", self.donothing, dynamic_text=self.display_freq),
@@ -214,6 +220,22 @@ class MonkeyBadge:
                 return func(self, *args, **kwargs)
         return _f
 
+    def enable_wifi(self):
+        if self.wlan.active():
+            self.wlan.disconnect()
+        else:
+            self.wlan.active(True)
+        self.wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
+
+    def disable_wifi(self):
+        if self.wlan.active():
+            self.wlan.disconnect()
+        self.wlan.active(False)
+
+    def show_timed_message(self, msg, delay=2000):
+        self.button_handler.disable_buttons()
+        self.display.show_timed_message(msg, delay)
+
     def lock_station(self, freq):
         self.lock_radio_station = True
         self.radio.tuneFreq(freq)
@@ -234,14 +256,18 @@ class MonkeyBadge:
         return self.current_menu
 
     def menu_seek_up(self):
-        if self.lock_radio_station == False:
+        def _f():
             self.radio.seekUp()
+        if self.lock_radio_station == False:
+            thread.start_new_thread(_f, [])
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
     def menu_seek_down(self):
-        if self.lock_radio_station == False:
+        def _f():
             self.radio.seekDown()
+        if self.lock_radio_station == False:
+            thread.start_new_thread(_f, [])
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
@@ -265,6 +291,26 @@ class MonkeyBadge:
             for badge, last_seen in self.seen_badges.items()
         ])
         return sbmenu
+
+    def initiate_pair(self):
+        if not self.infrared.pairing:
+            self.display.show_timed_message(['Not in',
+                                             'pairing',
+                                             'mode'])
+            return
+        success = self.infrared.initiate_pairing()
+        if not success:
+            self.display.show_timed_message(['Failed to',
+                                             'init',
+                                             'pairing'])
+
+    def pairing_mode(self):
+        self.infrared.pairing_mode = True
+        self.infrared.end_pairing_mode = time.ticks_ms() + 10000
+        self.show_timed_message('Pairing Mode', 10000)
+
+    def display_friends(self):
+        print(self.friends)
 
     def select_log(self):
         lmenu = Menu([], 'Log', parent=self.current_menu)
@@ -318,7 +364,7 @@ class MonkeyBadge:
     def _update_display(self, menu_index=0):
         self.display.update_menu_name(self.current_menu.title)
         self.display.update_menu_items(self.current_menu.items, menu_index)
-        self.display.finalize_body()  # write
+        self.display.refresh(time.ticks_ms())
 
     def _schedule_ir_input(self, addr, data, _):
         """Defers handling of IR input outside of an IRQ"""
@@ -362,8 +408,8 @@ class MonkeyBadge:
                 self.challenge_menu.items.append(MenuItem('Intro Complete',
                                                           self.donothing))
             self.intro = j['intro']
-            if not self.infrared.pairing and self.intro['complete']:
-                self.infrared.enable_pairing()
+            # if not self.infrared.pairing and self.intro['complete']:
+            #     self.infrared.enable_pairing()
             self.challenge1 = j['challenge1']
             self.challenge2 = j['challenge2']
             self.challenge3 = j['challenge3']
@@ -424,18 +470,23 @@ class MonkeyBadge:
 
     @if_ir
     def infrared_check(self):
+        now = time.ticks_ms()
+        if self.infrared.pairing_mode and now > self.infrared.end_pairing_mode:
+            self.infrared.pairing_mode = False
         if self.infrared.msgs:
-            print('infrared check')
             while self.infrared.msgs:
                 opcode, sender, extra = self.infrared.msgs.pop()
                 if opcode == 'DISCOVER':
                     self.log = f'DISC: {sender}'
                     self.infrared.send_here()
+                    self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == 'HERE':
                     self.log = f'HERE: {sender}'
+                    self.show_timed_message(f'HERE {sender}')
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == 'INIT_PAIR':
                     self.log = f'PAIR: {sender}'
+                    self.show_timed_message(f'PREQ {sender}')
                     self.infrared.send_resp_pair(sender)
 
     def initialize_badge(self):
@@ -449,18 +500,6 @@ class MonkeyBadge:
                 self._center_butback,
                 self._right_butback
         )
-
-        # Create tasks
-        # checkin_task = asyncio.create_task(self.checkin())
-        # network_check_task = asyncio.create_task(self.wifi_check())
-        # infrared_task = asyncio.create_task(self.infrared_check())
-        # ir_recv_task = asyncio.create_task(self.infrared.recv())
-        # tasks = {
-        #         'checkin_task': checkin_task,
-        #         'network_check_task': network_check_task,
-        #         'infrared_check_task': infrared_task,
-        #         'ir_recv_task': ir_recv_task,
-        # }
 
         # always boot up to the main menu.
         self.current_menu = self.main_menu
@@ -490,11 +529,8 @@ class MonkeyBadge:
                     self._calls_queue.append(call)
 
             # wlan, no blocking
-            print(self.wlan.ifconfig()[0], self.last_checkin, now)
             if not self.wlan.isconnected():
                 self.display.set_wifi_status(None)
-                self.wlan.active(True)
-                self.wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
             else:
                 self.display.set_wifi_status(int(self.wlan.status('rssi')))
 
@@ -520,5 +556,7 @@ class MonkeyBadge:
                 # konami.main()
                 self.initialize_badge()
                 self._calls_queue.append(self.config_konami_win)
-            self.display.refresh()
-            time.sleep(5)
+            if self.display.refresh(now):
+                self.button_handler.enable_buttons()
+
+            time.sleep(2)

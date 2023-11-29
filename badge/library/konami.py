@@ -258,6 +258,7 @@ class Konami:
         self._buttons.append(Button(4, self._button_up))
         self._buttons.append(Button(14, self._button_down))
         self._buttons.append(Button(13, self._button_enter))
+        self._buttons.append(Button(15, self._button_enter))
 
     def _button_up(self, *_args):
         """Callback for up button"""

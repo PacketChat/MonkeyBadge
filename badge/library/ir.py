@@ -62,6 +62,8 @@ class IR:
     def __init__(self, self_addr=None):
         self.enabled = False
         self.pairing = False
+        self.pairing_mode = False
+        self.end_pairing_mode = 0
         self.monkey_mode = False
         self.hiddren_objects = False
 
@@ -81,7 +83,8 @@ class IR:
             return False
         if opcode == 'HIDDEN_OBJECT' and not self.hiddren_objects:
             return False
-        if opcode == 'INIT_PAIR' and not self.pairing:
+        if opcode == 'INIT_PAIR' and not self.pairing_mode:
+            print('got init pair but not in pairing mode')
             return False
         return True
 
@@ -150,9 +153,10 @@ class IR:
     def initiate_pairing(self):
         """Sends a pairing request"""
         if not self.pairing:
-            return
+            return False
         data = [config.IR_OPCODES['INIT_PAIR'].code]
         self.send(data)
+        return True
 
     def enable_sync(self):
         """Enable IR Recv"""

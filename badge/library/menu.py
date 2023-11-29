@@ -1,5 +1,8 @@
 class MenuItem:
-    def __init__(self, name, action=None, submenu=None, dynamic_text=None):
+    def __init__(self, name,
+                 action=None,
+                 submenu=None,
+                 dynamic_text=None):
         """
         :param name: Name of the menu item
         :param action: Function to execute when the item is selected
