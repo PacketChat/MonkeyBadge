@@ -48,7 +48,7 @@ jobs:
         cp ${{ github.workspace }}/micropython/ports/esp32/build-monkeybadge/micropython.bin ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.bin
         SHA256SUM=$(sha256sum ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.bin | awk '{print $1}')
         FSIZE=$(find  -L * -name ota_update_${{ env.RELEASE_DATE }}.bin -printf '%s\n')
-        jq  -n --arg fsize "${FSIZE}" --arg sha "${SHA256SUM}" --arg fname ota_update_${{ env.RELEASE_DATE }}.bin '{"firmware": $fname, "sha": $sha, "length": $fsize}' | tee ${{ github.workspace}}/dist/ota_update_${{ env.RELEASE_DATE }}.json
+        jq  -n --arg fsize "${FSIZE}" --arg sha "${SHA256SUM}" --arg fname ota_update_${{ env.RELEASE_DATE }}.bin '{"firmware": $fname, "sha": $sha, "length": $fsize | tonumber}' | tee ${{ github.workspace}}/dist/ota_update_${{ env.RELEASE_DATE }}.json
         echo "SHA256SUM=$SHA256SUM" | tee -a ${GITHUB_ENV}
 
     - name: Upload Artifacts - Zip Bundle
