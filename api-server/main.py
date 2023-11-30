@@ -1,13 +1,14 @@
-from fastapi import FastAPI, HTTPException, Security, Request, status, Header
-from fastapi.security import APIKeyHeader 
-from hrid import HRID
+import json
+import os
+import random
 import secrets
+
+from fastapi import FastAPI, HTTPException, Security, Request, status, Header
+from fastapi.security import APIKeyHeader
+from hrid import HRID
 from keystore import ApiKeyStore
 from pydantic import BaseModel
 import coredis
-import json
-import os
-
 import uvicorn
 
 app = FastAPI()
@@ -100,6 +101,9 @@ class Register(BaseModel):
     key: str
     handle: str
 
+class IntroComplete(BaseModel):
+    myUUID: str
+
 class Checkin(BaseModel):
     myUUID: str
 
@@ -135,7 +139,7 @@ async def isBadgeInParingMode(badge_id):
     # check if badge_id is in pairing mode
     # if badge_id is in pairing mode, return true
     # if badge_id is not in pairing mode, return false
-    
+
     badgelist = await client.lrange("matchmodebadges", 0, -1)
 
     # if the badge is in the list - return true
@@ -184,11 +188,28 @@ async def changehandle(badge_id, r: Handle):
         await updatefield(badge_id, "badgeHandle", r.handle)
         return str({ "badge_id": badge_id, "message": f"changed handle for {badge_id} to {r.handle}"})
 
+@app.post("/introcomplete")
+async def introcomplete(r: IntroComplete, api_key: str = Security(get_api_key)):
+    # use badge_id to lookup json from redis
+    # if there's a result, return the json structure
+    # check if badge_id exists in redis
+    j = await client.json.get(r.myUUID, ".")
+
+    if not j:
+        raise HTTPException(status_code=404, detail="Badge not found")
+
+    if j['token'] != api_key:
+          raise HTTPException(status_code=404, detail="Badge not found")
+    else:
+        j['intro']['complete'] = 1
+        await client.json.set(r.myUUID, ".", j)
+    return j
+
 @app.post("/register")
 async def register(r: Register):
     # create a new badge in redis from the templateJSON string
-    
-    #if not is_valid_uuid(r.myUUID): 
+
+    #if not is_valid_uuid(r.myUUID):
     #    print(f"UUID: {r.myUUID} invalid.")
     #    raise HTTPException(status_code=400, detail="Invalid UUID")
 
@@ -222,9 +243,9 @@ async def checkIn(r: Checkin, api_key: str = Security(get_api_key)):
 
     if not j:
         raise HTTPException(status_code=404, detail="Badge not found")
-    
+
     if j['token'] != api_key:
-          raise HTTPException(status_code=400, detail="API Key mismatch")
+          raise HTTPException(status_code=400, detail="Badge not found")
     else:
         if check_intro_started() == True:
             j['intro']['enabled'] = 1
@@ -262,7 +283,7 @@ async def enablematchmode(badge_id):
         for i in badgelist:
             if i.decode() == badge_id:
                 return str({ "badge_id": badge_id, "message": "matchmode already enabled" })
-        
+
         await client.rpush("matchmodebadges", badge_id.split())
         return str({ "badge_id": badge_id, "message": "matchmode enabled" })
 
@@ -282,31 +303,33 @@ async def getpairingmodebadges(badge_id):
     else:
         raise HTTPException(status_code=400, detail="Matchmode not enabled")
 
+
+
 @app.post("/match/{badge_id}")
 async def match(badge_id, r: Match):
     # this call will be used to match badges, the request body will contain the target badge id and a key
     # the key will be used to validate the request
     # if the key is valid, the target badge id will be added to the matches array in the badge json
     # if the key is invalid, the request will be rejected
-    # only the requesting badge will be updated.    
+    # only the requesting badge will be updated.
 
 
     # todo: badges shouldnt match unless BOTH are in matching mode.
 
     if not r:
         raise HTTPException(status_code=400, detail="Request body missing")
-    
+
     targetBadge = await client.json.get(r.targetUUID, ".")
     if not targetBadge:
         raise HTTPException(status_code=404, detail="Target badge not found")
-    else:  
+    else:
         j = await client.json.get(badge_id, ".")
 
         if not j:
             raise HTTPException(status_code=404, detail="Badge not found")
         else:
             badgelist = await client.lrange("matchmodebadges", 0, -1)
-            
+
             # both badges must be in pairing mode for this to work.
             if await isBadgeInParingMode(badge_id):
                 if await isBadgeInParingMode(r.targetUUID):

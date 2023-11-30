@@ -1,7 +1,8 @@
 from machine import Pin, SoftI2C
-import ssd1306
+import _thread as thread
 import framebuf
-import library.ticker as ticker
+import ssd1306
+import time
 import uasyncio as asyncio
 
 # 'HCcircle', 60x60px
@@ -52,10 +53,9 @@ HC_LOGO = [
 class DisplayHandler:
     """
     A class for controlling an OLED display using the SSD1306 driver.
-    The screen will be split up into three sections of 1-6-1
-    (header-body-footer) where the header will display contextual information,
-    the body will display menu items or context information and the footer
-    will be a rolling ticker that will display any updates
+    The screen will be split up into three sections of 1-7
+    (header-body) where the header will display contextual information,
+    the body will display menu items or context information
     """
 
     def __init__(self, width, height, sda_pin, scl_pin):
@@ -71,17 +71,17 @@ class DisplayHandler:
         self.i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin))
         self.display = ssd1306.SSD1306_I2C(width, height, self.i2c)
 
-        self.header_right = framebuf.FrameBuffer(bytearray(24), 24, 8,
+        self.header_right = framebuf.FrameBuffer(bytearray(48), 48, 8,
                                                  framebuf.MONO_HLSB)
-        self.header_left = framebuf.FrameBuffer(bytearray(104), 104, 8,
+        self.header_left = framebuf.FrameBuffer(bytearray(80), 80, 8,
                                                 framebuf.MONO_HLSB)
-        self.body = framebuf.FrameBuffer(bytearray(128 * 6), 128, 8 * 6,
+        self.body = framebuf.FrameBuffer(bytearray(128 * 7), 128, 8 * 7,
                                          framebuf.MONO_HLSB)
 
         # header status
         self.muted = False
         self.ir_status = False
-        self.wifi_status = 0
+        self.wifi_status = None
 
         # body state
         self.menu_items = []
@@ -90,54 +90,45 @@ class DisplayHandler:
         # correct scrolling
         self.menu_top = 0
         self.fullscreen = True
+
         self.print_logo()
-
-        # ticker state
-        self.ticker = ticker.Ticker(16, frame_skip=4)
-        self.ticker_task = None
-
-    def _start_ticker(self):
-        if self.ticker_task:
-            self.ticker_task.cancel()
-        self.ticker_task = asyncio.create_task(self._update_from_ticker())
-
-    def _stop_ticker(self):
-        if self.ticker_task:
-            self.ticker_task.cancel()
 
     def _unfullscreen(self):
         self.fullscreen = False
-        self._start_ticker()
-        self._update_status()
         self.display.fill(0)
+        self._update_status()
 
     def _body_from(self, i):
-        display_items = self.menu_items[i:i + 6]
+        display_items = self.menu_items[i:i + 7]
         new_index = self.menu_index - i
         for j, item in enumerate(display_items):
             text = '{} {}'.format(
-                    '> ' if j == new_index else '  ',
+                    '>' if j == new_index else ' ',
                     item
             )
             self.body.text(text, 0, 8 * j, 1)
 
-    async def _update_from_ticker(self):
-        for fb in self.ticker.ticker():
-            self.display.blit(fb, 0, 56)
-            self.display.show()
-
     def _update_status(self):
         if self.fullscreen:
             self._unfullscreen()
+        if self.wifi_status is None:
+            wifi_msg = '???'
+        elif self.wifi_status >= -45:
+            wifi_msg = '.'
+        elif self.wifi_status >= -65:
+            wifi_msg = '.o'
+        else:
+            wifi_msg = '.oO'
+
         self.header_right.fill(0)
-        status = '{}{}{}'.format(
+        status = '{}{} {}'.format(
                 'm' if self.muted else 'u',
-                self.wifi_status if self.wifi_status else '?',
-                'I' if self.ir_status else 'i'
+                'I' if self.ir_status else 'i',
+                wifi_msg
         )
 
         self.header_right.text(status, 0, 0, 1)
-        self.display.blit(self.header_right, 104, 0)
+        self.display.blit(self.header_right, 80, 0)
         self.display.show()
 
     def _update_body(self):
@@ -147,7 +138,7 @@ class DisplayHandler:
         if self.menu_index < self.menu_top:
             # scroll up
             self.menu_top = self.menu_index
-        elif self.menu_index > self.menu_top + 5:
+        elif self.menu_index > self.menu_top + 6:
             # scroll down
             self.menu_top += 1
         self._body_from(self.menu_top)
@@ -160,37 +151,45 @@ class DisplayHandler:
         self.header_left.text(context, 0, 0, 1)
         self.display.blit(self.header_left, 0, 0)
 
-    def update_menu_items(self, items):
+    def update_menu_items(self, items, index=0):
         if self.fullscreen:
             self._unfullscreen()
-        self.menu_items = [x.name for x in items]  # list of MenuItem
-        self.menu_index = 0
+        # list of MenuItem
+        self.menu_items = [x.get_display_text() for x in items]
+        self.menu_index = index
 
     def finalize_body(self):
+        """Finalizes and shows the body"""
         self._update_body()
         self.display.show()
 
     def set_ir_status(self, ir_status):
+        """Sets the IR status"""
         self.ir_status = ir_status
         self._update_status()
 
     def toggle_ir_status(self):
+        """Toggles the ir status"""
         self.ir_status = not self.ir_status
         self._update_status()
 
     def set_muted(self, muted):
+        """Sets the mute status"""
         self.muted = muted
         self._update_status()
 
     def toggle_muted(self):
+        """Toggles muted status"""
         self.muted = not self.muted
         self._update_status()
 
     def set_wifi_status(self, wifi_status):
+        """Set the wifi strength or None if not connected"""
         self.wifi_status = wifi_status
         self._update_status()
 
     def menu_down(self):
+        """Moves the menu down"""
         if self.menu_index == len(self.menu_items) - 1:
             return self.menu_index
         self.menu_index += 1
@@ -199,12 +198,21 @@ class DisplayHandler:
         return self.menu_index
 
     def menu_up(self):
+        """Moves the menu up"""
         if self.menu_index == 0:
             return self.menu_index
         self.menu_index -= 1
         self._update_body()
         self.finalize_body()
         return self.menu_index
+
+    def refresh(self):
+        """Refreshes the screen if not in logo mode"""
+        if self.fullscreen:
+            return
+        self._update_status()
+        self._update_body()
+        self.finalize_body()
 
     def clear(self):
         """
@@ -215,20 +223,9 @@ class DisplayHandler:
 
     def print_logo(self):
         """Prints the HushCon Logo"""
-        fb = framebuf.FrameBuffer(bytearray(HC_LOGO), 60, 60, framebuf.MONO_HLSB)
+        fbuf = framebuf.FrameBuffer(bytearray(HC_LOGO),
+                                    60, 60, framebuf.MONO_HLSB)
         self.display.fill(0)
-        self.display.blit(fb, 34, 2)
+        self.display.blit(fbuf, 34, 2)
+        self.display.show()
         self.fullscreen = True
-        self.display.show()
-
-    def print_lines(self, lines):
-        """
-        Display text on the OLED screen.
-
-        Args:
-            list of strings, we only print the first 6 elements of the list.
-        """
-        self.clear()
-        for i, line in enumerate(lines):
-            self.display.text(line, 0, i * 11, 1)
-        self.display.show()
