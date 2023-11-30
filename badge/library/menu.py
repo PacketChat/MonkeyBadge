@@ -34,11 +34,16 @@ class Menu:
         :param title: Menu title
         :param parent: Parent menu
         """
-        self.items = [MenuItem("Back")] + items if parent else items
+        self.items = [
+                MenuItem("Back", self._back)
+                ] + items if parent else items
         self.selected = 0
         self.parent = parent
         self.title = title
         self.top_index = 0  # Index of the top item displayed
+
+    def _back(self):
+        return self.parent
 
     def move_up(self):
         """
@@ -73,7 +78,4 @@ class Menu:
         Select the current item
         """
         item = self.items[self.selected]
-        if item.name == "Back":
-            return self.parent
         return item.execute()
-
