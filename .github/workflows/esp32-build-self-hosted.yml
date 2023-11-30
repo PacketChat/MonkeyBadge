@@ -1,6 +1,10 @@
+# Refactor the following GitHub action.  
+# First, read the entire source file.  Next, break down the existing single job named "build" into a series of step by step actions which can be decomposed into a reusable workflow.
 name: Perform firmware build on the Intel NUC
 
 on:
+  workflow_call:
+
   pull_request:
     types:
       - closed
@@ -12,8 +16,6 @@ on:
   push:
     paths:
       - '.github/workflows/esp32-build-self-hosted.yml'
-      - 'board/**'
-      - 'badge/**'
 
 jobs:
   build:
