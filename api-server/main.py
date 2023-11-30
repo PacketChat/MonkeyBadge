@@ -88,11 +88,8 @@ client = coredis.Redis(host=redishost, port=redisport)
 class Admin(BaseModel):
     key: str
 
-class Match(BaseModel):
-    targetUUID: str
-    key: str
-
 class Handle(BaseModel):
+    myUUID: str
     handle: str
     key: str
 
@@ -101,10 +98,11 @@ class Register(BaseModel):
     key: str
     handle: str
 
-class IntroComplete(BaseModel):
+class UUID_IRID(BaseModel):
     myUUID: str
+    remoteIRID: str
 
-class Checkin(BaseModel):
+class OnlyUUID(BaseModel):
     myUUID: str
 
 async def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
@@ -135,20 +133,6 @@ async def isValidBadge(badge_id):
     else:
         return True
 
-async def isBadgeInParingMode(badge_id):
-    # check if badge_id is in pairing mode
-    # if badge_id is in pairing mode, return true
-    # if badge_id is not in pairing mode, return false
-
-    badgelist = await client.lrange("matchmodebadges", 0, -1)
-
-    # if the badge is in the list - return true
-    for i in badgelist:
-        if i.decode() == badge_id:
-            return True
-    # otherwise return false
-    return False
-
 async def validateKey(badge_id, key):
     # check if the key is valid for the badge_id
     # if valid, return true
@@ -175,21 +159,24 @@ def generate_handle():
     handle = hruuid.generate()
     return handle
 
-@app.post("/changehandle/{badge_id}")
-async def changehandle(badge_id, r: Handle):
+@app.post("/changehandle}")
+async def changehandle(r: Handle, api_key: str = Security(get_api_key)):
+    j = await client.json.get(r.myUUID, ".")
+
+    if not j:
+        raise HTTPException(status_code=404, detail="Badge not found")
+
+    if j['token'] != api_key:
+        raise HTTPException(status_code=404, detail="Badge not found")
 
     if not r.handle:
         raise HTTPException(status_code=400, detail="Request body missing")
-
-    # change the handle of a badge
-    if not await isValidBadge(badge_id):
-        raise HTTPException(status_code=404, detail="Badge not found")
-    else:
-        await updatefield(badge_id, "badgeHandle", r.handle)
-        return str({ "badge_id": badge_id, "message": f"changed handle for {badge_id} to {r.handle}"})
+    
+    await updatefield(r.myUUID, "badgeHandle", r.handle)
+    return str({ "badge_id": r.myUUID, "message": f"changed handle for {r.myUUID} to {r.handle}"})
 
 @app.post("/introcomplete")
-async def introcomplete(r: IntroComplete, api_key: str = Security(get_api_key)):
+async def introcomplete(r: OnlyUUID, api_key: str = Security(get_api_key)):
     # use badge_id to lookup json from redis
     # if there's a result, return the json structure
     # check if badge_id exists in redis
@@ -235,7 +222,7 @@ async def register(r: Register):
 
 
 @app.post("/checkin")
-async def checkIn(r: Checkin, api_key: str = Security(get_api_key)):
+async def checkIn(r: OnlyUUID, api_key: str = Security(get_api_key)):
     # use badge_id to lookup json from redis
     # if there's a result, return the json structure
     # check if badge_id exists in redis
@@ -251,102 +238,6 @@ async def checkIn(r: Checkin, api_key: str = Security(get_api_key)):
             j['intro']['enabled'] = 1
         return j
 
-
-@app.get("/disablematchmode/{badge_id}")
-async def disablematchmode(badge_id):
-    # match mode will set the match_mode flag to false in the badge json
-
-    # check if badge_id exists in redis
-    j = await client.json.get(badge_id, ".")
-    if not j:
-        raise HTTPException(status_code=404, detail="Badge not found")
-    else:
-        if await client.lrem("matchmodebadges", 1, badge_id):
-            return str({ "badge_id": badge_id, "message": "matchmode disabled." })
-        else:
-            return str({ "badge_id": badge_id, "message": "matchmode already disabled." })
-
-@app.get("/enablematchmode/{badge_id}")
-async def enablematchmode(badge_id):
-    # match mode will set the match_mode flag to true in the badge json
-    # todo: disable match_mode after 5 minutes - this might be a job that runs.
-
-    # check if badge_id exists in redis
-    j = await client.json.get(badge_id, ".")
-    if not j:
-        raise HTTPException(status_code=404, detail="Badge not found")
-    else:
-        badgelist = await client.lrange("matchmodebadges", 0, -1)
-        print(badgelist)
-
-        # search l for badge_id in bytes format
-        for i in badgelist:
-            if i.decode() == badge_id:
-                return str({ "badge_id": badge_id, "message": "matchmode already enabled" })
-
-        await client.rpush("matchmodebadges", badge_id.split())
-        return str({ "badge_id": badge_id, "message": "matchmode enabled" })
-
-@app.post("submit_challenge/{challenge_id}")
-def submit_challenge(challenge_id):
-    pass
-
-@app.get("/listpairingmodebadges/{badge_id}")
-async def getpairingmodebadges(badge_id):
-    # this call will return a list of badges that are currently in match mode
-    # reads a redis key list called matchmodebadges
-
-    if await isBadgeInParingMode(badge_id):
-        l = await client.lrange("matchmodebadges", 0, -1)
-        print(l)
-        return l
-    else:
-        raise HTTPException(status_code=400, detail="Matchmode not enabled")
-
-
-
-@app.post("/match/{badge_id}")
-async def match(badge_id, r: Match):
-    # this call will be used to match badges, the request body will contain the target badge id and a key
-    # the key will be used to validate the request
-    # if the key is valid, the target badge id will be added to the matches array in the badge json
-    # if the key is invalid, the request will be rejected
-    # only the requesting badge will be updated.
-
-
-    # todo: badges shouldnt match unless BOTH are in matching mode.
-
-    if not r:
-        raise HTTPException(status_code=400, detail="Request body missing")
-
-    targetBadge = await client.json.get(r.targetUUID, ".")
-    if not targetBadge:
-        raise HTTPException(status_code=404, detail="Target badge not found")
-    else:
-        j = await client.json.get(badge_id, ".")
-
-        if not j:
-            raise HTTPException(status_code=404, detail="Badge not found")
-        else:
-            badgelist = await client.lrange("matchmodebadges", 0, -1)
-
-            # both badges must be in pairing mode for this to work.
-            if await isBadgeInParingMode(badge_id):
-                if await isBadgeInParingMode(r.targetUUID):
-                    if r.key != "abcdefg":
-                        return "invalid key"
-                    else:
-                        if not r.targetUUID in j['challenge1']['matches']:
-                            j['challenge1']['matches'].append(r.targetUUID)
-                            await client.json.set(badge_id, ".", j)
-                            return "match made"
-                        else:
-                            return "match already made"
-                else:
-                    return f"{targetBadge} not in match mode"
-            else:
-                return f"{badge_id} not in match mode"
-
 @app.post("/start_the_intro")
 async def startintro(r: Admin):
     if r.key == "ADMINSONLY":
@@ -357,11 +248,106 @@ async def startintro(r: Admin):
     pass
 
 @app.post("/deletebadge")
-async def deletebadge(r: Register):
-    if r.key == "THISWILLDELETEBADGE":
-        await client.json.delete(r.myUUID)
-        return "deleted"
-    pass
+async def deletebadge(r: Register, api_key: str = Security(get_api_key)):
+    j = await client.json.get(r.myUUID, ".")
 
+    if not j:
+        raise HTTPException(status_code=404, detail="Badge not found")
+
+    if j['token'] != api_key:
+          raise HTTPException(status_code=404, detail="Badge not found")
+    
+    else:
+        if r.key == "THISWILLDELETEBADGE":
+            await client.delete(j['IR_ID'])
+            await client.json.delete(r.myUUID)
+            return "deleted"
+
+@app.post("/getIRID")
+async def getIRID(r: OnlyUUID, api_key: str = Security(get_api_key)):
+    # use badge_id to lookup json from redis
+    # if there's a result, return the json structure
+    # check if badge_id exists in redis
+    j = await client.json.get(r.myUUID, ".")
+
+    if not j:
+        raise HTTPException(status_code=404, detail="Badge not found")
+
+    if j['token'] != api_key:
+          raise HTTPException(status_code=404, detail="Badge not found")
+    
+    else:
+        # does the badge have an IRID already?
+        # if so, return it
+        # if not, generate one and return it and save it to the redis key
+
+        if not j['IR_ID']:
+            # generate an IRID
+            while True:
+                irid = random.getrandbits(16)
+                if not await client.json.get(irid, "."):
+                    # update the player in redis with the IR_ID
+                    await updatefield(r.myUUID, "IR_ID", irid)
+                    # create a redis key/value pair of the IR_ID with the uuid as the value
+                    await client.set(irid, r.myUUID)
+                    break
+        else:
+            irid = j['IR_ID']
+        # return the player's irid
+        return j
+
+@app.post("/friendrequest")
+async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
+    """
+    process a friend request with another badge
+
+    json request body: 
+    {
+        myUUID: "uuid",
+        remoteIRID: "irid"
+    }
+    
+    adds the match to the player's json['challenge1']['matches'] list as a string
+    with the format of "handle:uuid".  this can be processed by client to
+    display the handle.
+
+    returns the remote uuid and handle if successful
+    """
+    myjson = await client.json.get(r.myUUID)
+
+    if not myjson:
+        raise HTTPException(status_code=404, detail="Badge not found")
+
+    if myjson['token'] != api_key:
+          raise HTTPException(status_code=404, detail="Badge not found")
+    
+    else:
+        # does the irid exist in redis?
+        if await client.get(r.remoteIRID):
+
+            # get the uuid from the irid key
+            if not await client.get(r.remoteIRID):
+                raise HTTPException(status_code=404, detail="Remote Badge not found")
+
+            remote_uuid = await client.get(r.remoteIRID)
+            remote_uuid = remote_uuid.decode()
+
+            # get the handle from the player's uuid json key
+            remote_json = await client.json.get(remote_uuid, ".")
+
+            if not remote_json:
+                raise HTTPException(status_code=404, detail="Remote Badge not found")
+            else:
+                for item in myjson['challenge1']['matches']:
+                    if item.split(":")[1] == remote_uuid:
+                        raise HTTPException(status_code=400, detail="Already friends")
+                else:
+                    myjson['challenge1']['matches'].append(f"{remote_json['badgeHandle']}:{remote_uuid}")
+                    await client.json.set(r.myUUID, ".", myjson)
+                    return { "remote_uuid": remote_uuid, 
+                            "remote_handle": remote_json['badgeHandle']}
+        else:
+            raise HTTPException(status_code=404, detail="IRID not found")
+    
 if __name__ == '__main__':
     uvicorn.run(app, port=8000, host='0.0.0.0')
