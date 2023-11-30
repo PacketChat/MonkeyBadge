@@ -7,6 +7,7 @@ require("bundle-networking")
 
 # Require some micropython-lib modules.
 require("neopixel")
+require("logging")
 require("ssd1306")
 require("umqtt.robust")
 require("umqtt.simple")
