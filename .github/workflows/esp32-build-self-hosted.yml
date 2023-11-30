@@ -28,16 +28,6 @@ jobs:
       run: |
          /usr/bin/tar zxf /opt/micropython.tgz
 
-#  Preferrable... but this takes almost 5 minutes to run
-#    - name: Checkout MicroPython
-#      run: |
-#         /usr/bin/git init micropython
-#         /usr/bin/git -C micropython remote add origin https://github.com/micropython/micropython
-#         /usr/bin/git -C micropython -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/heads/master:refs/remotes/origin/master
-#         /usr/bin/git -C micropython checkout --progress --force -B master refs/remotes/origin/master
-#         /usr/bin/git -C micropython submodule sync --recursive
-#         /usr/bin/git -C micropython -c protocol.version=2 submodule update --init --force --depth=1 --recursive
-
     - name: Set release date
       run: |
         echo "RELEASE_DATE=$(date +%Y-%m-%d.%s)" >> ${GITHUB_ENV}
@@ -67,20 +57,3 @@ jobs:
         name: ota_update_${{ env.RELEASE_DATE }}
         path: ${{ github.workspace }}/dist/**
 
-    - name: Upload Artifacts - Over the Air (OTA) binary update
-      uses: actions/upload-artifact@v3
-      with:
-        name: ota_update_${{ env.RELEASE_DATE }}.bin
-        path: ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.bin
-
-    - name: Upload Artifacts - OTA JSON Manifest
-      uses: actions/upload-artifact@v3
-      with:
-        name: ota_update_${{ env.RELEASE_DATE }}.json
-        path: ${{ github.workspace }}/dist/ota_update_${{ env.RELEASE_DATE }}.json
-
-    - name: Upload Artifacts - Full binary firmware
-      uses: actions/upload-artifact@v3
-      with:
-        name: firmware_${{ env.RELEASE_DATE }}.bin
-        path: ${{ github.workspace }}/dist/firmware_${{ env.RELEASE_DATE }}.bin
