@@ -1,9 +1,16 @@
 from library.monkeybadge import MonkeyBadge
-import uasyncio as asyncio
 
-async def main():
-    badge = MonkeyBadge()
-    await badge.run()
+def main():
+    """Entry point"""
+    while True:
+        badge = MonkeyBadge()
+        try:
+            badge.run()
+        except Exception as err:
+            print(f'Error running badge: {err}')
+
 
 # Run the main function
-asyncio.run(main())
+if __name__ == '__main__':
+    print('ENTRY')
+    main()
