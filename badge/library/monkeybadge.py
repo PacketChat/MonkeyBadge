@@ -559,7 +559,7 @@ class MonkeyBadge:
                     self.intro['enabled'] == 1 and \
                     self.current_challenge == "intro":
                 self.deinitialize()
-                # konami.main()
+                konami.main()
                 self.initialize_badge()
                 self._calls_queue.append(self.config_konami_win)
             self.display.refresh()
