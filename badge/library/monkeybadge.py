@@ -72,7 +72,7 @@ class MonkeyBadge:
         # Need to pull these from the db store.
         try:
             self.apitoken = self.db.get("token")
-        except:
+        except Exception:
             print("Unable to load token: badge not registered.")
             self.apitoken = None
 
@@ -372,7 +372,7 @@ class MonkeyBadge:
         """
         try:
             current_state = json.loads(self.db.get("state"))
-        except:
+        except Exception:
             print("Unable to load saved state: not found.")
             current_state = ""
         # print(f"Current State {type(current_state)}: {current_state}")
