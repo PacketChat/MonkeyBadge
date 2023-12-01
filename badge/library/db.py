@@ -1,4 +1,6 @@
 import btree
+import machine
+
 
 class dbtree:
     def __init__(self):
@@ -7,7 +9,11 @@ class dbtree:
         except OSError:
             self.file = open("badgedb", "w+b")
 
-        self.db = btree.open(self.file)
+        try:
+            self.db = btree.open(self.file)
+        except Exception as err:
+            print(f"failed to open btree, err: {err}. trying to recover")
+            machine.reset()
 
     def set(self, key, value):
         """
@@ -21,14 +27,13 @@ class dbtree:
             print(f"dbtree.set: type {type(err)}: {err}")
             return False
 
-
     def get(self, key):
         """
         Get key/value pairs to the btree database
 
         will always return a string, not bytes
         """
-        try: 
+        try:
             result = self.db[key]
             self.db.flush()
             return result.decode()
