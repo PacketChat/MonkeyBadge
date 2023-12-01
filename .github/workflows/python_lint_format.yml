@@ -4,19 +4,17 @@ on:
 
   push:
     paths: 
-      - 'board/**'
       - 'badge/**'
   pull_request:
     paths: 
-      - 'board/**'
       - 'badge/**'
 
 jobs:
   mpy_lint:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install --user ruff=0.1.6
+      - run: pip install ruff==0.1.6
       - run: ruff check --output-format=github badge
       - run: ruff format --diff badge
 
