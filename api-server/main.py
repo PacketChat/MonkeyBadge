@@ -106,21 +106,6 @@ class OnlyUUID(BaseModel):
     myUUID: str
 
 
-async def create_api_key(client, badge_id, api_key):
-    j = await client.json.get(badge_id, ".")
-    j["token"] = api_key
-    await client.json.set(badge_id, ".", j)
-    apikeys = await client.lrange("badge_apikeys", 0, -1)
-
-    # search l for badge_id in bytes format
-    for i in apikeys:
-        if i.decode() == api_key:
-            return
-
-    # if api_key isn't in apikeys - then add it
-    await client.rpush("badge_apikeys", api_key.split())
-
-
 async def does_api_key_exist(client, api_key: str) -> bool:
     apikeys = await client.lrange("badge_apikeys", 0, -1)
     if not apikeys:
@@ -143,13 +128,12 @@ async def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
         )
 
 
-async def isValidBadge(badge_id):
+async def validBadge(badge_id):
     # check if badge_id is valid
     # return true if valid
     # return false if not valid
 
     j = await client.json.get(badge_id, ".")
-    print(j)
     if not j:
         return False
     else:
@@ -267,19 +251,28 @@ async def register(r: Register):
         raise HTTPException(status_code=400, detail="Invalid registration key")
 
     # see if the badge_id exists in redis already
-    if not await isValidBadge(r.myUUID):
+    if not await validBadge(r.myUUID):
+        new_token = secrets.token_urlsafe(16)
+
         j = json.loads(templateJSON)
-        j["token"] = r.key
+        j["token"] = new_token
         j["badgeHandle"] = r.handle
 
+        apikeys = await client.lrange("badge_apikeys", 0, -1)
+
+        # search for badge_id in bytes format
+        for i in apikeys:
+            if i.decode() is new_token:
+                raise HTTPException(status_code=500, detail="Duplicate token error")
+
+        # if api_key isn't in apikeys - then add it
+        await client.rpush("badge_apikeys", [new_token])
         await client.json.set(f"{r.myUUID}", ".", j)
-        generated_key = secrets.token_urlsafe(16)
-        await create_api_key(client, r.myUUID, generated_key)
 
         return j
 
     else:
-        print("Badge {r.myUUID} already exists.")
+        print(f"Badge {r.myUUID} already exists.")
         raise HTTPException(status_code=400, detail="Badge already exists")
 
 
