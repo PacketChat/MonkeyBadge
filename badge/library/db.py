@@ -21,7 +21,7 @@ class dbtree:
         """
         try:
             self.db[key] = value
-            self.db.flush()
+            self.db.flush()  # type: ignore
             return True
         except Exception as err:
             print(f"dbtree.set: type {type(err)}: {err}")
@@ -35,10 +35,10 @@ class dbtree:
         """
         try:
             result = self.db[key]
-            self.db.flush()
+            self.db.flush()  # type: ignore
             return result.decode()
         except Exception as err:
-            # print(f"dbtree.get: type {type(err)}: {err}")
+            print(f"dbtree.get: type {type(err)}: {err}")
             return None
 
     def close(self):

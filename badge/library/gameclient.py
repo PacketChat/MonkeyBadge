@@ -1,7 +1,4 @@
 import urequests as requests
-import usocket as socket
-import ussl as ssl
-import ujson as json
 import config
 
 
@@ -63,7 +60,7 @@ class GameClient:
         if r.status_code == 200:
             return r.json()
         else:
-            None
+            return None
 
     def konami_complete(self, token, uuid):
         request_url = self.baseurl + "/introcomplete"
@@ -77,7 +74,7 @@ class GameClient:
         if r.status_code == 200:
             return r.json()
         else:
-            None
+            return None
 
     def secure_api_request(self, url, token, json):
         """

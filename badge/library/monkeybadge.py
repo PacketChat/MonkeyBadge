@@ -57,6 +57,10 @@ class MonkeyBadge:
         )
         self._log = []
 
+        # OTA urls
+        self.reset_url = config.RESET_URL
+        self.update_url = config.UPDATE_URL
+
         # Led init
         self.leds = LEDHandler()
         self.leds.do_all_off()
@@ -112,7 +116,7 @@ class MonkeyBadge:
                 MenuItem("Volume Down", self.menu_volume_down),
             ]
         )
-        self.challenge_menu = Menu([], title="Chlng Status", parent=self.about_menu)
+        self.challenge_menu = Menu([], title="Game Status", parent=self.about_menu)
         self.main_menu.items.extend(
             [
                 MenuItem("Radio", submenu=self.radio_menu),
@@ -236,7 +240,7 @@ class MonkeyBadge:
 
         def _f(self, *args, **kwargs):
             if self.wlan.isconnected():
-                return func(self, *args, **kwargs)
+                return func(self, *args, **kwargs)  # type: ignore
 
         return _f
 
@@ -245,7 +249,7 @@ class MonkeyBadge:
 
         def _f(self, *args, **kwargs):
             if self.infrared.enabled:
-                return func(self, *args, **kwargs)
+                return func(self, *args, **kwargs)  # type: ignore
 
         return _f
 
@@ -269,13 +273,13 @@ class MonkeyBadge:
         return self.current_menu
 
     def menu_seek_up(self):
-        if self.lock_radio_station == False:
+        if not self.lock_radio_station:
             self.radio.seekUp()
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
     def menu_seek_down(self):
-        if self.lock_radio_station == False:
+        if not self.lock_radio_station:
             self.radio.seekDown()
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
@@ -287,7 +291,8 @@ class MonkeyBadge:
         return f"Volume: {self.radio.volume}"
 
     def flash_badge(self, url, verbose=False):
-        # TODO: change the state of the screen to show that the badge is updating and resetting
+        # TODO: change the state of the screen to show that
+        # the badge is updating and resetting
         try:
             # print(OTAStatus.status())
             with OTAUpdate(reboot=True, verbose=verbose) as ota:
