@@ -2,7 +2,7 @@
 import time
 import machine
 from machine import Pin, SoftI2C
-import ssd1306
+import ssd1306  # type: ignore
 import framebuf
 import neopixel
 
@@ -214,7 +214,7 @@ class ExtendedBuffer(framebuf.FrameBuffer):
         elif name == "enter":
             self.enter(top_left, color)
         else:
-            self.text(name, *top_left, color)
+            self.text(name, *top_left, color)  # type: ignore
 
     def text_row(self, text, row, position, color):
         func = self._left
@@ -259,6 +259,7 @@ class Konami:
         self._buttons.append(Button(4, self._button_up))
         self._buttons.append(Button(14, self._button_down))
         self._buttons.append(Button(13, self._button_enter))
+        self._buttons.append(Button(15, self._button_enter))
 
     def _button_up(self, *_args):
         """Callback for up button"""
