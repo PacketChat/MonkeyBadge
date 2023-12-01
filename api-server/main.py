@@ -269,7 +269,7 @@ async def register(r: Register):
     # see if the badge_id exists in redis already
     if not await isValidBadge(r.myUUID):
         j = json.loads(templateJSON)
-        # j['token'] = r.key
+        j["token"] = r.key
         j["badgeHandle"] = r.handle
 
         await client.json.set(f"{r.myUUID}", ".", j)

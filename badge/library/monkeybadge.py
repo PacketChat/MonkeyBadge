@@ -28,7 +28,9 @@ __version__ = "0.2.1"
 class MonkeyBadge:
     def __init__(self):
         """
-        Initalize the MonkeyBadge class - this class is used to interact with the MonkeyBadge server API
+        Initalize the MonkeyBadge class - this class is used to interact with the
+        MonkeyBadge server API
+
         :param uuid: The UUID of the badge
         """
         # anything in the calls queue should return true on success and false
@@ -453,13 +455,9 @@ class MonkeyBadge:
 
         if r:
             print("Registration successful")
-            print(r)
             self.apitoken = r["token"]
-            print(self.apitoken)
             self.db.set("token", self.apitoken)
-            print("token saved")
             self.save_gamestate(r)
-            print("gamestate saved")
         else:
             print("registration failed")
 
@@ -552,10 +550,10 @@ class MonkeyBadge:
                 if not success:
                     self._calls_queue.append(call)
 
-            # wlan, no blocking
-            print(
-                f"IP: {self.wlan.ifconfig()[0]}, last checkin:{self.last_checkin}, now:{now}"
-            )
+            # the badge is waiting to execute the next call
+            print(".", end="")
+            # print(f"IP: {self.wlan.ifconfig()[0]}")
+
             if not self.wlan.isconnected():
                 self.display.set_wifi_status(None)
                 self.wlan.active(True)
