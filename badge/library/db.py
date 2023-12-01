@@ -38,7 +38,7 @@ class dbtree:
             self.db.flush()
             return result.decode()
         except Exception as err:
-            print(f"dbtree.get: type {type(err)}: {err}")
+            # print(f"dbtree.get: type {type(err)}: {err}")
             return None
 
     def close(self):

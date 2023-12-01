@@ -6,20 +6,23 @@ import ssd1306
 import framebuf
 import neopixel
 
-KONAMI_LOGO = bytearray(b'\x00\x18\x00\x00x\x00\x00\xf8\x00\x01\xf8\x00\x01'
-                        b'\xf8`\x01\xf9\xe0\x03\xfb\xe0\x03\xc7\xe0\x07\x07'
-                        b'\xe0\x0e\x07\xe0>\x0f\xe0\xfe\x0f\x00\xfc\x1c\x00'
-                        b'\xfc8\x00\xfc\xf8\x00\xfb\xf8\x00\xe3\xf0\x00\x83'
-                        b'\xf0\x00\x03\xf0\x00\x03\xe0\x00\x03\x80\x00\x02'
-                        b'\x00\x00')
+KONAMI_LOGO = bytearray(
+    b"\x00\x18\x00\x00x\x00\x00\xf8\x00\x01\xf8\x00\x01"
+    b"\xf8`\x01\xf9\xe0\x03\xfb\xe0\x03\xc7\xe0\x07\x07"
+    b"\xe0\x0e\x07\xe0>\x0f\xe0\xfe\x0f\x00\xfc\x1c\x00"
+    b"\xfc8\x00\xfc\xf8\x00\xfb\xf8\x00\xe3\xf0\x00\x83"
+    b"\xf0\x00\x03\xf0\x00\x03\xe0\x00\x03\x80\x00\x02"
+    b"\x00\x00"
+)
 KONAMI_DIM = (22, 19)
 
 
-LEFT = bytearray(b'\x00\x18<Z\x18\x18\x18\x00')
-RIGHT = bytearray(b'\x00\x18\x18\x18Z<\x18\x00')
-UP = bytearray(b'\x00\x08\x04~~\x04\x08\x00')
-DOWN = bytearray(b'\x00\x10 ~~ \x10\x00')
-ENTER = bytearray(b'\x108|\x10\x10\x12\x1e\x00')
+LEFT = bytearray(b"\x00\x18<Z\x18\x18\x18\x00")
+RIGHT = bytearray(b"\x00\x18\x18\x18Z<\x18\x00")
+UP = bytearray(b"\x00\x08\x04~~\x04\x08\x00")
+DOWN = bytearray(b"\x00\x10 ~~ \x10\x00")
+ENTER = bytearray(b"\x108|\x10\x10\x12\x1e\x00")
+
 
 def do_heartbeat(np, color=(180, 0, 0), beats_per_minute=60):
     """
@@ -49,7 +52,6 @@ def do_heartbeat(np, color=(180, 0, 0), beats_per_minute=60):
     # Sleep for the remaining half of the pulse duration (time the
     # heartbeat is "off"):
     time.sleep_ms(int(pulse_duration * 500))
-
 
 
 # Classes:
@@ -103,6 +105,7 @@ class Button:
         # during debounce delay:
         return initial_state == 0 and self.pin.value() == 0
 
+
 class SSD1306:
     """
     A class for controlling an OLED display using the SSD1306 driver.
@@ -150,6 +153,7 @@ class SSD1306:
             self.display.invert(invert)
             time.sleep_ms(sleep_time)
 
+
 class ExtendedBuffer(framebuf.FrameBuffer):
     CHAR_HEIGHT = 8
     CHAR_WIDTH = 8
@@ -187,43 +191,42 @@ class ExtendedBuffer(framebuf.FrameBuffer):
 
     def arrow(self, direction, top_left, color):
         tlx, tly = top_left
-        if direction in ['left', 'right']:
+        if direction in ["left", "right"]:
             self.hline(tlx + 1, tly + 3, 6, color)
             self.hline(tlx + 1, tly + 4, 6, color)
 
-        if direction in ['up', 'down']:
+        if direction in ["up", "down"]:
             self.vline(tlx + 3, tly + 1, 6, color)
             self.vline(tlx + 4, tly + 1, 6, color)
 
-        if direction in ['left', 'up']:
+        if direction in ["left", "up"]:
             self.line(tlx + 1, tly + 3, tlx + 3, tly + 1, color)
-        if direction in ['right', 'down']:
+        if direction in ["right", "down"]:
             self.line(tlx + 6, tly + 4, tlx + 4, tly + 6, color)
-        if direction in ['left', 'down']:
+        if direction in ["left", "down"]:
             self.line(tlx + 1, tly + 4, tlx + 3, tly + 6, color)
-        if direction in ['right', 'up']:
+        if direction in ["right", "up"]:
             self.line(tlx + 4, tly + 1, tlx + 6, tly + 3, color)
 
-
     def symbol(self, name, top_left, color):
-        if name in ['left', 'right', 'up', 'down']:
+        if name in ["left", "right", "up", "down"]:
             self.arrow(name, top_left, color)
-        elif name == 'enter':
+        elif name == "enter":
             self.enter(top_left, color)
         else:
             self.text(name, *top_left, color)
 
     def text_row(self, text, row, position, color):
         func = self._left
-        if position == 'right':
+        if position == "right":
             func = self._right
-        elif position == 'center':
+        elif position == "center":
             func = self._center
         func(text, row, color)
 
 
 class Konami:
-    KEYS = ['left', 'right', 'up', 'down', 'A', 'B', 'enter']
+    KEYS = ["left", "right", "up", "down", "A", "B", "enter"]
 
     def __init__(self):
         self._won = False
@@ -234,20 +237,18 @@ class Konami:
         # since a single byte encapsulates 8 pixels then a bytearray of width
         # gives a single character line of 8x8 pixels per character
         self.code_view = ExtendedBuffer(
-                bytearray(self.display.width),
-                self.display.width,
-                ExtendedBuffer.CHAR_HEIGHT * 1,
-                framebuf.MONO_VLSB
+            bytearray(self.display.width),
+            self.display.width,
+            ExtendedBuffer.CHAR_HEIGHT * 1,
+            framebuf.MONO_VLSB,
         )
 
-        selection_height = (
-                self.display.height - (ExtendedBuffer.CHAR_HEIGHT * 2)
-        )
+        selection_height = self.display.height - (ExtendedBuffer.CHAR_HEIGHT * 2)
         self.selection = ExtendedBuffer(
-                bytearray(self.display.width * selection_height),
-                self.display.width // 2,
-                selection_height,
-                framebuf.MONO_VLSB
+            bytearray(self.display.width * selection_height),
+            self.display.width // 2,
+            selection_height,
+            framebuf.MONO_VLSB,
         )
 
         self._buttons = []
@@ -277,11 +278,22 @@ class Konami:
 
     def _code_complete(self):
         """Checks if the konami code has been entered
-            Returns true if code hasn't been completed yet and False
+        Returns true if code hasn't been completed yet and False
         """
 
-        konami = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right',
-                  'B', 'A', 'enter']
+        konami = [
+            "up",
+            "up",
+            "down",
+            "down",
+            "left",
+            "right",
+            "left",
+            "right",
+            "B",
+            "A",
+            "enter",
+        ]
         clen = len(self.code)
         if konami[:clen] != self.code:
             self.code = []
@@ -294,9 +306,12 @@ class Konami:
 
     def _win_screen(self):
         self._won = True
-        tbuf = ExtendedBuffer(bytearray(self.display.width * self.display.height // 8),
-                              self.display.width, self.display.height,
-                              framebuf.MONO_VLSB)
+        tbuf = ExtendedBuffer(
+            bytearray(self.display.width * self.display.height // 8),
+            self.display.width,
+            self.display.height,
+            framebuf.MONO_VLSB,
+        )
         self.display.fill(0)
         tbuf.fill(0)
 
@@ -304,10 +319,10 @@ class Konami:
             tbuf.fill_rect(0, i * 8, self.display.width, 8, 1)
         for button in self._buttons:
             button.pin.irq(lambda x: (), machine.Pin.IRQ_FALLING)
-        tbuf.text_row('WINNER', 0, 'left', 0)
-        tbuf.text_row('WINNER', 2, 'right', 0)
-        tbuf.text_row('CHICKEN', 4, 'left', 0)
-        tbuf.text_row('DINNER', 6, 'right', 0)
+        tbuf.text_row("WINNER", 0, "left", 0)
+        tbuf.text_row("WINNER", 2, "right", 0)
+        tbuf.text_row("CHICKEN", 4, "left", 0)
+        tbuf.text_row("DINNER", 6, "right", 0)
         self.display.blit(tbuf, 0, 0)
         self.display.show()
         time.sleep_ms(1500)
@@ -315,12 +330,11 @@ class Konami:
     def _refresh_selection(self):
         self.selection.fill(0)
         selected_key = self.KEYS[self.idx]
-        shown_keys = self.KEYS[max(self.idx - 2, 0):self.idx + 6]
+        shown_keys = self.KEYS[max(self.idx - 2, 0) : self.idx + 6]
         for i, key in enumerate(shown_keys):
             color = 1
             if key == selected_key:
-                self.selection.fill_rect(0, i * 8,
-                                         self.display.width, 8, 1)
+                self.selection.fill_rect(0, i * 8, self.display.width, 8, 1)
                 color = 0
             self.selection.symbol(key, (0, i * 8), color)
         # blit two rows down
@@ -333,29 +347,30 @@ class Konami:
         # blit one row down
         self.display.blit(self.code_view, 0, 8)
 
-
     @property
     def won(self):
         return self._won
 
     def refresh(self):
         self.display.fill(0)
-        self.display.text('Enter Code:', 0, 0)
+        self.display.text("Enter Code:", 0, 0)
         self._refresh_code_view()
         self._refresh_selection()
 
         # add konami logo to bottom right
         kbuf = ExtendedBuffer(KONAMI_LOGO, *KONAMI_DIM, framebuf.MONO_HLSB)
-        self.display.blit(kbuf,
-                          self.display.width - KONAMI_DIM[0],
-                          self.display.height - KONAMI_DIM[1])
+        self.display.blit(
+            kbuf,
+            self.display.width - KONAMI_DIM[0],
+            self.display.height - KONAMI_DIM[1],
+        )
         self.display.show()
 
 
 def main():
     """Entry function"""
     np = neopixel.NeoPixel(machine.Pin(18), 7)
-
+    print("starting konami mode")
     k = Konami()
     while True:
         do_heartbeat(np)
@@ -365,5 +380,5 @@ def main():
             break
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

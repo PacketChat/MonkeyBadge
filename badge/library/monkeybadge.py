@@ -552,7 +552,7 @@ class MonkeyBadge:
 
             # the badge is waiting to execute the next call
             print(".", end="")
-            # print(f"IP: {self.wlan.ifconfig()[0]}")
+            # print(f"IP: {self.wlan.ifconfig()[0]}, {self.last_checkin} {now}")
 
             if not self.wlan.isconnected():
                 self.display.set_wifi_status(None)
@@ -564,6 +564,7 @@ class MonkeyBadge:
             # checkin, blocking
             if time.ticks_diff(now, self.last_checkin) >= config.CHECKIN_PERIOD:
                 try:
+                    print(".")
                     self.checkin()
                     self.last_checkin = now
                 except Exception as err:
