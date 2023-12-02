@@ -255,9 +255,24 @@ async def register(r: Register):
         new_token = secrets.token_urlsafe(16)
 
         j = json.loads(templateJSON)
+
+        # get a new IRID
+        irid = ""
+        while True:
+            irid = random.getrandbits(16)
+            # if the irid doesn't exist in redis, then use it
+            if not await client.json.get(f"{irid}", "."):
+                # update the player in redis with the IR_ID
+                j["IR_ID"] = irid
+                # create a redis key IR_ID with the value: uuid
+                await client.set(f"{irid}", r.myUUID)
+                break
+        if irid == "":
+            raise HTTPException(status_code=500, detail="Unable to create IRID")
+
         j["token"] = new_token
         j["badgeHandle"] = r.handle
-
+        j["IR_ID"] = irid
         apikeys = await client.lrange("badge_apikeys", 0, -1)
 
         # search for badge_id in bytes format
@@ -351,50 +366,6 @@ async def deletebadge(r: Register, api_key: str = Security(get_api_key)):
         raise HTTPException(
             status_code=500, detail="Unable to delete badge - Data error"
         )
-
-
-@app.post("/getIRID")
-async def getIRID(r: OnlyUUID, api_key: str = Security(get_api_key)):
-    """
-    Generates a unique IRID for the badge and saves the game state to the db
-
-    POST request with json body: {"myUUID": "uuid"}
-    returns full json structure for player
-    """
-    # use badge_id to lookup json from redis
-    # if there's a result, return the json structure
-    # check if badge_id exists in redis
-    j = await client.json.get(r.myUUID, ".")
-
-    if not j:
-        raise HTTPException(status_code=404, detail="Badge not found")
-
-    if isinstance(j, dict) and "token" in j:
-        if not j["token"] == api_key:
-            raise HTTPException(status_code=404, detail="Badge not found")
-
-        # does the badge have an IRID already?
-        if "IR_ID" in j:
-            if j["IR_ID"]:
-                irid = j["IR_ID"]
-                # return the player's irid
-                return j
-            else:
-                # generate an unique IRID
-                while True:
-                    irid = random.getrandbits(16)
-                    # if the irid doesn't exist in redis, then use it
-                    if not await client.json.get(f"{irid}", "."):
-                        # update the player in redis with the IR_ID
-                        j["IR_ID"] = irid
-                        await client.json.set(r.myUUID, ".", j)
-
-                        # create a redis key IR_ID with the value: uuid
-                        await client.set(f"{irid}", r.myUUID)
-                        break
-                return j
-        else:
-            raise HTTPException(status_code=500, detail="getIRID - Data error")
 
 
 @app.post("/hiddenobject")
