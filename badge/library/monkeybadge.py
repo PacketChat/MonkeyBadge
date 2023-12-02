@@ -33,6 +33,9 @@ class MonkeyBadge:
 
         :param uuid: The UUID of the badge
         """
+        # Wifi Init
+        self.wlan = network.WLAN(network.STA_IF)
+
         # anything in the calls queue should return true on success and false
         # on failure
         self._calls_queue = list()
@@ -44,9 +47,6 @@ class MonkeyBadge:
 
         self.gameclient = GameClient()
         self.last_checkin = -60000
-
-        # Wifi Init
-        self.wlan = network.WLAN(network.STA_IF)
 
         # Display Init
         self.display = DisplayHandler(
@@ -68,6 +68,7 @@ class MonkeyBadge:
         # IR
         self.infrared = IR()
         self.seen_badges = dict()
+        self.friends = dict()
 
         # boot
         print("Badge Booting")
@@ -80,7 +81,7 @@ class MonkeyBadge:
         # Need to pull these from the db store.
         try:
             self.apitoken = self.db.get("token")
-        except Exception:
+        except KeyError:
             print("Unable to load token: badge not registered.")
             self.apitoken = None
 
@@ -104,7 +105,6 @@ class MonkeyBadge:
         self.radio_menu = Menu([], title="Radio", parent=self.main_menu)
         self.settings_menu = Menu([], title="Settings", parent=self.main_menu)
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
-        self.ir_menu = Menu([], title="Infrared", parent=self.main_menu)
         self.social_menu = Menu([], title="Social", parent=self.main_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
 
@@ -122,7 +122,6 @@ class MonkeyBadge:
                 MenuItem("Radio", submenu=self.radio_menu),
                 MenuItem("Settings", submenu=self.settings_menu),
                 MenuItem("Lightshow", submenu=self.lightshow_menu),
-                MenuItem("IR", submenu=self.ir_menu),
                 MenuItem("Social", submenu=self.social_menu),
                 MenuItem("About", submenu=self.about_menu),
             ]
@@ -173,9 +172,6 @@ class MonkeyBadge:
                 ),
                 MenuItem("Log", self.select_log),
             ]
-        )
-        self.ir_menu.items.extend(
-            [MenuItem("Send Message", "pass"), MenuItem("Receive Message", "pass")]
         )
         self.social_menu.items.extend(
             [
@@ -253,6 +249,22 @@ class MonkeyBadge:
 
         return _f
 
+    def enable_wifi(self):
+        if self.wlan.active():
+            self.wlan.disconnect()
+        else:
+            self.wlan.active(True)
+        self.wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
+
+    def disable_wifi(self):
+        if self.wlan.active():
+            self.wlan.disconnect()
+        self.wlan.active(False)
+
+    def show_timed_message(self, msg, delay=2000):
+        self.button_handler.disable_buttons()
+        self.display.show_timed_message(msg, delay)
+
     def lock_station(self, freq):
         self.lock_radio_station = True
         self.radio.tuneFreq(freq)
@@ -307,7 +319,8 @@ class MonkeyBadge:
 
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
-        self.display.print_lines(["", "  Applying OTA", "     Update  "])
+        # self.display.print_lines(["", "  Applying OTA", "     Update  "])
+        self.show_timed_message("OTA Update")
         self.flash_badge(self.update_url)
 
     def reset_badge(self):
@@ -324,7 +337,7 @@ class MonkeyBadge:
         config.eraseNVS("WIFI_SSID")
         config.eraseNVS("WIFI_PASSWORD")
         print("Applying Factory Firmware...")
-        self.display.print_lines(["", "Applying Factory", "    Firmware"])
+        self.show_timed_message("Resetting")
         self.flash_badge(self.reset_url)
 
     # social wrappers
@@ -343,6 +356,22 @@ class MonkeyBadge:
             ]
         )
         return sbmenu
+
+    def initiate_pair(self):
+        if not self.infrared.pairing:
+            self.display.show_timed_message(["Not in", "pairing", "mode"])
+            return
+        success = self.infrared.initiate_pairing()
+        if not success:
+            self.display.show_timed_message(["Failed to", "init", "pairing"])
+
+    def pairing_mode(self):
+        self.infrared.pairing_mode = True
+        self.infrared.end_pairing_mode = time.ticks_ms() + 10000
+        self.show_timed_message("Pairing Mode", 10000)
+
+    def display_friends(self):
+        print(self.friends)
 
     def select_log(self):
         lmenu = Menu([], "Log", parent=self.current_menu)
@@ -385,15 +414,17 @@ class MonkeyBadge:
     def toggle_mute(self):
         if self.radio.muted:
             self.radio.unmute()
+            self.show_timed_message("Unmuted")
             self.display.set_muted(False)
         else:
             self.radio.mute()
+            self.show_timed_message("Muted")
             self.display.set_muted(True)
 
     def _update_display(self, menu_index=0):
         self.display.update_menu_name(self.current_menu.title)
         self.display.update_menu_items(self.current_menu.items, menu_index)
-        self.display.finalize_body()  # write
+        self.display.refresh(time.ticks_ms())  # write
 
     def _schedule_ir_input(self, addr, data, _):
         """Defers handling of IR input outside of an IRQ"""
@@ -502,18 +533,23 @@ class MonkeyBadge:
 
     @if_ir
     def infrared_check(self):
+        now = time.ticks_ms()
+        if self.infrared.pairing_mode and now > self.infrared.end_pairing_mode:
+            self.infrared.pairing_mode = False
         if self.infrared.msgs:
-            print("infrared check")
             while self.infrared.msgs:
                 opcode, sender, extra = self.infrared.msgs.pop()
                 if opcode == "DISCOVER":
                     self.log = f"DISC: {sender}"
                     self.infrared.send_here()
+                    self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "HERE":
                     self.log = f"HERE: {sender}"
+                    self.show_timed_message(f"HERE {sender}")
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "INIT_PAIR":
                     self.log = f"PAIR: {sender}"
+                    self.show_timed_message(f"PREQ {sender}")
                     self.infrared.send_resp_pair(sender)
 
     def initialize_badge(self):
@@ -561,8 +597,6 @@ class MonkeyBadge:
 
             if not self.wlan.isconnected():
                 self.display.set_wifi_status(None)
-                self.wlan.active(True)
-                self.wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
             else:
                 self.display.set_wifi_status(int(self.wlan.status("rssi")))
 
@@ -593,5 +627,7 @@ class MonkeyBadge:
                 konami.main()
                 self.initialize_badge()
                 self._calls_queue.append(self.config_konami_win)
-            self.display.refresh()
-            time.sleep(5)
+            if self.display.refresh(now):
+                self.button_handler.enable_buttons()
+
+            time.sleep(2)
