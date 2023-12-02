@@ -45,7 +45,7 @@ class MonkeyBadge:
 
         self.db = dbtree()
 
-        self.gameclient = GameClient()
+        self.gameclient = GameClient(__version__)
         self.last_checkin = -60000
 
         # Display Init
@@ -73,6 +73,7 @@ class MonkeyBadge:
         # boot
         print("Badge Booting")
         self.display.print_logo()
+        time.sleep(1)  # I want to see the logo
 
         # TODO possibly set this as a property of the game client
         self.registration_key = config.REG_KEY
@@ -129,7 +130,7 @@ class MonkeyBadge:
         self.about_menu.items.extend(
             [
                 MenuItem("Version", self.display_menu("Version", __version__)),
-                MenuItem("Chllnge Status", submenu=self.challenge_menu),
+                MenuItem("Game Status", submenu=self.challenge_menu),
                 MenuItem(
                     "Credits",
                     self.display_menu(
@@ -177,6 +178,9 @@ class MonkeyBadge:
             [
                 MenuItem("Find Badges", self.find_badges),
                 MenuItem("Seen Badges", self.seen_badges_action),
+                MenuItem("Match Send", self.initiate_pair),
+                MenuItem("Match Recv", self.pairing_mode),
+                MenuItem("Friends List", self.display_friends),
             ]
         )
         self.radio_menu.items.extend(
@@ -368,7 +372,7 @@ class MonkeyBadge:
     def pairing_mode(self):
         self.infrared.pairing_mode = True
         self.infrared.end_pairing_mode = time.ticks_ms() + 10000
-        self.show_timed_message("Pairing Mode", 10000)
+        self.show_timed_message(["Waiting for", "new friends"], 10000)
 
     def display_friends(self):
         print(self.friends)
@@ -459,7 +463,7 @@ class MonkeyBadge:
             j = json.loads(state)
 
         if j:
-            print("loaded gamestate {}".format(self.infrared_id))
+            print(f"loaded gamestate. irid: {self.infrared_id}")
             self.handle = j["badgeHandle"]
             self.apitoken = j["token"]
             self.infrared_id = j["IR_ID"]
@@ -504,6 +508,15 @@ class MonkeyBadge:
                 del self.seen_badges[badge]
 
     @if_wifi
+    def friendrequest(self, irid):
+        r = self.gameclient.friendrequest(self.apitoken, self.badge_uuid, irid)
+        print(f"friend request with {irid}")
+        if r:
+            self.save_gamestate(r)
+        else:
+            print(f"friend request failed: {r}")
+
+    @if_wifi
     def config_konami_win(self):
         """We've completed the intro challenge"""
         j = self.gameclient.konami_complete(self.apitoken, self.badge_uuid)
@@ -540,17 +553,21 @@ class MonkeyBadge:
             while self.infrared.msgs:
                 opcode, sender, extra = self.infrared.msgs.pop()
                 if opcode == "DISCOVER":
+                    print(f"DISCOVER pair: {sender}")
                     self.log = f"DISC: {sender}"
                     self.infrared.send_here()
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "HERE":
+                    print(f"HERE pair: {sender}")
                     self.log = f"HERE: {sender}"
                     self.show_timed_message(f"HERE {sender}")
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "INIT_PAIR":
+                    print(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
                     self.show_timed_message(f"PREQ {sender}")
                     self.infrared.send_resp_pair(sender)
+                    self.friendrequest(sender)
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
