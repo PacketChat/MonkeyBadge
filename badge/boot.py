@@ -25,9 +25,11 @@ async def connect_to_wifi(ssid, password):
 
 async def check_ota():
     # TODO: Set this to false before shipping
-
-    with OTA(verbose=True) as ota:
-        ota.from_json(config.UPDATE_URL)
+    try:
+        with OTA(verbose=True) as ota:
+            ota.from_json(config.UPDATE_URL)
+    except Exception:
+        pass
 
 
 print("Performing POST")
