@@ -2,9 +2,11 @@ name: Python code linting and formatting
 on:
   push:
     paths: 
+      - 'api-server/**'
       - 'badge/**'
   pull_request:
     paths: 
+      - 'api-server/**'
       - 'badge/**'
   workflow_dispatch:
 
@@ -14,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install ruff==0.1.6
+        name: Install ruff
       - run: ruff check --output-format=github badge
+        name: Perform linting of code base using ruff
       - run: ruff format --diff badge
+        name: Check to see if code has been formatted with ruff
 
