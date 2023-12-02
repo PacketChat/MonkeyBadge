@@ -1,3 +1,4 @@
+from machine import ADC
 import micropython
 import network
 import time
@@ -10,6 +11,7 @@ from library.button import ButtonHandler
 from library.db import dbtree
 from library.display import DisplayHandler
 from library.gameclient import GameClient
+from library.battery import Meter
 from library.leds import LEDHandler
 from library.menu import Menu, MenuItem
 from library.radio import SI470X
@@ -100,6 +102,11 @@ class MonkeyBadge:
 
         print("Confirming firmware boot success. Cancelling OTA Rollback")
         OTARollback.cancel()
+
+        # Battery meter initialization and configuration:
+        self.battery_meter = Meter(config.FULLY_CHARGED_ADC_VALUE, config.DEPLETED_ADC_VALUE, config.MAX_VOLTAGE)
+        adc = ADC(config.ADC_PIN)
+        adc.atten(ADC.ATTN_11DB)
 
         # Menu Definitions
         self.main_menu = Menu([], title="Main")
@@ -193,6 +200,7 @@ class MonkeyBadge:
         )
         self.settings_menu.items.extend(
             [
+                MenuItem("Battery Life", self.battery_check),
                 MenuItem("OLED Brightness", "pass"),
                 MenuItem("LED Brightness", "pass"),
                 #        MenuItem("Volume", "pass"),
@@ -320,6 +328,10 @@ class MonkeyBadge:
     #                print("Unable to process update: Network Error")
     #            else:
     #                print("Unable to flash device %s" % (err))
+
+    def battery_check(self):
+        reading = self.battery_meter.info()
+        self.show_timed_message(reading)
 
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
