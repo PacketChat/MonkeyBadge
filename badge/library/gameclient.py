@@ -3,8 +3,12 @@ import config
 
 
 class GameClient:
-    def __init__(self):
+    def __init__(self, version):
         self.baseurl = config.API_SERVER
+        self.headers = {
+            "content-type": "application/json",
+            "User-Agent": f"MonkeyBadge/{version}",
+        }
 
     def reg_request(self, request_body):
         """
@@ -30,7 +34,7 @@ class GameClient:
         print(f"Sending JSON Values: {request_body}")
 
         try:
-            r = requests.post(request_url, json=request_body)
+            r = requests.post(request_url, headers=self.headers, json=request_body)
         except Exception as err:
             print(f"Error reaching {self.baseurl}/register: {err}")
             return None
@@ -46,8 +50,6 @@ class GameClient:
         Checkin with the MonkeyBadge server API
         """
         request_url = self.baseurl + "/checkin"
-        print(f"connecting to {request_url}")
-        print(f"token: {apitoken}, uuid: {uuid}")
 
         request_body = {"myUUID": uuid}
 
@@ -64,8 +66,6 @@ class GameClient:
 
     def konami_complete(self, token, uuid):
         request_url = self.baseurl + "/introcomplete"
-        print(f"connecting to {request_url}")
-        print(f"token: {token}, uuid: {uuid}")
 
         request_body = {"myUUID": uuid}
 
@@ -76,14 +76,26 @@ class GameClient:
         else:
             return None
 
+    def friendrequest(self, token, uuid, IRID):
+        request_url = self.baseurl + "/friendrequest"
+        request_body = {"myUUID": uuid, "remoteIRID": str(IRID)}
+
+        r = self.secure_api_request(request_url, token, request_body)
+        print(r.text)
+        if r.status_code == 200:
+            return r.json()
+        elif r.status_code == 400:
+            print("Already Friends")
+        else:
+            return None
+
     def secure_api_request(self, url, token, json):
         """
         Send a request to the MonkeyBadge server API
         """
-        header = {"X-API-Key": token}
-
+        header = self.headers | {"X-API-Key": token}
         print(f"API Call to {url}")
-        print(f"header: {token}\n body: {json}")
+        print(f"header: {header}\n body: {json}")
 
         r = requests.post(url, headers=header, json=json)
 
