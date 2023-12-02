@@ -436,7 +436,7 @@ class MonkeyBadge:
         """
         try:
             current_state = json.loads(self.db.get("state"))
-        except KeyError:
+        except Exception:
             print("Unable to load saved state: not found.")
             current_state = ""
         # print(f"Current State {type(current_state)}: {current_state}")
