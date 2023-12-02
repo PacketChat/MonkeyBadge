@@ -708,9 +708,6 @@ class LEDHandler:
         # Groupings for the LEDs: First 2, next 2, last 3:
         groups = [[0, 1], [2, 3], [4, 5, 6]]
 
-        # Each group will have an equal share of the total duration:
-        delay_per_group = duration_s / len(groups)
-
         # Purple, Magenta, Cyan colors for the countdown:
         colors = [(87, 8, 255), (255, 0, 255), (0, 100, 100)]
 
@@ -807,8 +804,6 @@ class LEDHandler:
             (255, 0, 255),
             (87, 8, 255)
         ]
-
-        end_time = time.ticks_ms() + duration_s * 1000
 
         # 1. Fast Blinking:
         for _ in range(5):
