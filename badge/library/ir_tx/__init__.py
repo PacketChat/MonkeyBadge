@@ -12,7 +12,6 @@ from time import ticks_us, ticks_diff
 ESP32 = platform == 'esp32'  # Loboris not supported owing to RMT
 RP2 = platform == 'rp2'
 if ESP32:
-    from machine import Pin
     from esp32 import RMT
 elif RP2:
     from .rp2_rmt import RP2_RMT
