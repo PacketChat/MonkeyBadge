@@ -193,6 +193,7 @@ class SI470X(object):
         # variable name solely within the scope of the function.
 
         sf = self.fields
+        # fmt: off
         print(
 "   DEVICEID PN      : (0x{:0x}".format(sf.DEVICEID.PN) + f") \t{sf.DEVICEID.PN}\n" +
 "   DEVICEID MFGID   : (0x{:0x}".format(sf.DEVICEID.MFGID) + f") \t{sf.DEVICEID.MFGID}\n" +
@@ -228,6 +229,7 @@ class SI470X(object):
 " SYSCONFIG3 VOLEXT  : (0x{:0x}".format(sf.SYSCONFIG3.VOLEXT) + f") \t{sf.SYSCONFIG3.VOLEXT}\n" +
 " SYSCONFIG3 SKSNR   : (0x{:0x}".format(sf.SYSCONFIG3.SKSNR) + f") \t{sf.SYSCONFIG3.SKSNR}\n" +
 " SYSCONFIG3 SKCNT   : (0x{:0x}".format(sf.SYSCONFIG3.SKCNT) + f") \t{sf.SYSCONFIG3.SKCNT}\n")
+# fmt: on
 
 
     def setRegion(self):
