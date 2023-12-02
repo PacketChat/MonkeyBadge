@@ -1,6 +1,7 @@
 from machine import Pin, SoftI2C
 import framebuf
 import ssd1306
+import time
 
 # 'HCcircle', 60x60px
 
