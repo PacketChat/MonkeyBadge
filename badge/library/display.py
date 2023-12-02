@@ -59,6 +59,9 @@ class DisplayHandler:
     the body will display menu items or context information
     """
 
+    MARGIN = 2
+    PADDING = 2
+
     def __init__(self, width, height, sda_pin, scl_pin):
         """
         Initialize the SSD1306 driver for controlling an OLED display.
@@ -82,12 +85,21 @@ class DisplayHandler:
             bytearray(128 * 7), 128, 8 * 7, framebuf.MONO_HLSB
         )
 
+        self.timed_message = framebuf.FrameBuffer(
+            bytearray(930), 124, 60, framebuf.MONO_HLSB
+        )
+
+        # timing messages
+        self.showing_timed = False
+        self.timed_expiration = 0
+
         # header status
         self.muted = False
         self.ir_status = False
         self.wifi_status = None
 
         # body state
+        self.menu_name = None
         self.menu_items = []
         self.menu_index = 0
         # keep track of the "top" of the displayed menu so we can simulate
@@ -112,6 +124,8 @@ class DisplayHandler:
     def _update_status(self):
         if self.fullscreen:
             self._unfullscreen()
+        if self.showing_timed:
+            return
         if self.wifi_status is None:
             wifi_msg = "???"
         elif self.wifi_status >= -45:
@@ -143,12 +157,15 @@ class DisplayHandler:
         self._body_from(self.menu_top)
         self.display.blit(self.body, 0, 8)
 
-    def update_menu_name(self, context):
+    def _update_menu(self):
         if self.fullscreen:
             self._unfullscreen()
         self.header_left.fill(0)
-        self.header_left.text(context, 0, 0, 1)
+        self.header_left.text(self.menu_name, 0, 0, 1)
         self.display.blit(self.header_left, 0, 0)
+
+    def update_menu_name(self, context):
+        self.menu_name = context
 
     def update_menu_items(self, items, index=0):
         if self.fullscreen:
@@ -205,13 +222,22 @@ class DisplayHandler:
         self.finalize_body()
         return self.menu_index
 
-    def refresh(self):
+    def refresh(self, now):
         """Refreshes the screen if not in logo mode"""
+        ret = False
         if self.fullscreen:
-            return
-        self._update_status()
+            return False
+        if self.showing_timed:
+            if now < self.timed_expiration:
+                return False
+            else:
+                self.showing_timed = False
+                ret = True
         self._update_body()
+        self._update_menu()
+        self._update_status()
         self.finalize_body()
+        return ret
 
     def clear(self):
         """
@@ -228,14 +254,19 @@ class DisplayHandler:
         self.display.show()
         self.fullscreen = True
 
-    def print_lines(self, lines):
-        """
-        Display text on the OLED screen.
-
-        Args:
-            list of strings, we only print the first 6 elements of the list.
-        """
-        self.clear()
-        for i, line in enumerate(lines):
-            self.display.text(line, 0, i * 11, 1)
+    def show_timed_message(self, msgs, show_time=2000):
+        """Show a timed message"""
+        if isinstance(msgs, str):
+            msgs = [msgs]
+        now = time.ticks_ms()
+        self.timed_message.fill(0)
+        for i in range(self.PADDING):
+            self.timed_message.rect(i, i, 124 - i * 2, 60 - i * 2, 1)
+        for i, msg in enumerate(msgs[:5]):
+            self.timed_message.text(
+                msg, self.PADDING + self.MARGIN, self.PADDING + self.MARGIN + i * 8, 1
+            )
+        self.display.blit(self.timed_message, self.MARGIN, self.MARGIN)
         self.display.show()
+        self.showing_timed = True
+        self.timed_expiration = now + show_time
