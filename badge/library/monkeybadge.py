@@ -319,7 +319,8 @@ class MonkeyBadge:
 
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
-        self.display.print_lines(["", "  Applying OTA", "     Update  "])
+        # self.display.print_lines(["", "  Applying OTA", "     Update  "])
+        self.show_timed_message("OTA Update")
         self.flash_badge(self.update_url)
 
     def reset_badge(self):
@@ -336,7 +337,7 @@ class MonkeyBadge:
         config.eraseNVS("WIFI_SSID")
         config.eraseNVS("WIFI_PASSWORD")
         print("Applying Factory Firmware...")
-        self.display.print_lines(["", "Applying Factory", "    Firmware"])
+        self.show_timed_message("Resetting")
         self.flash_badge(self.reset_url)
 
     # social wrappers
