@@ -7,16 +7,19 @@ WIFI_SSID = "HushCon"
 WIFI_PASSWORD = "ThreeAmigos"
 API_SERVER = "https://update.kafka.tel/api"
 
+
 def setNVS(key, value):
     nvs.set_blob(key, value)
     nvs.commit()
 
+
 def getNVS(key, size):
     b = bytearray(size)
     nvs.get_blob(key, b)
-    value = b.decode("utf-8").strip('\x00')
+    value = b.decode("utf-8").strip("\x00")
     del b
     return value
+
 
 def eraseNVS(key):
     try:
@@ -25,6 +28,7 @@ def eraseNVS(key):
         # TODO: if we don't mask this users will likely see they can modify the value "API_SERVER"
         # pass
         print("Unable to erase key {}".format(key))
+
 
 # Wifi Config
 try:
@@ -50,17 +54,17 @@ REG_KEY = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
 CHECKIN_PERIOD = 60000
 BUTTON_PINS = [4, 14, 15, 13]
 BUTTON_PIN_DESCRIPTIONS = [
-        "left up",
-        "left down",
-        "center",
-        "right",
+    "left up",
+    "left down",
+    "center",
+    "right",
 ]
 
 # OLED screen Config
-OLED_HEIGHT = 64    # height (int): Height of the display in pixels.
-OLED_WIDTH = 128    # width (int): Width of the display in pixels.
-OLED_SDA_PIN = 5    # sda_pin (int): Pin number for the SDA (data) line of the I2C bus.
-OLED_SCL_PIN = 23   #scl_pin (int): Pin number for the SCL (clock) line of the I2C bus.
+OLED_HEIGHT = 64  # height (int): Height of the display in pixels.
+OLED_WIDTH = 128  # width (int): Width of the display in pixels.
+OLED_SDA_PIN = 5  # sda_pin (int): Pin number for the SDA (data) line of the I2C bus.
+OLED_SCL_PIN = 23  # scl_pin (int): Pin number for the SCL (clock) line of the I2C bus.
 
 # IR Pins (also double as right SAO GPIO pins)
 IR_RX_PIN = 19  # SAO2 GPIO1
@@ -84,16 +88,16 @@ SAO1_GPIO2 = 27
 # MONKEY: (0xffff, 0x07, 0xaa, 0xaa) <--- monkey ffff secret pass aaaa
 # HIDDEN_OBJECT: (0xeeee, 0x08, 0xbb, 0xbb) <---- hidden object eeee with
 #                                                 secret pass bbbb
-Opcode = namedtuple('Opcode', ['code', 'additional_bytes'])
+Opcode = namedtuple("Opcode", ["code", "additional_bytes"])
 IR_OPCODES = {
-        'DISCOVER': Opcode(1, 0),
-        'HERE': Opcode(2, 0),
-        'INIT_PAIR': Opcode(3, 0),
-        'RESP_PAIR': Opcode(4, 2),
-        'ACK_RESP': Opcode(5, 2),
-        'EMOTE': Opcode(6, 3),
-        'MONKEY': Opcode(7, 2),
-        'HIDDEN_OBJECT': Opcode(8, 2)
+    "DISCOVER": Opcode(1, 0),
+    "HERE": Opcode(2, 0),
+    "INIT_PAIR": Opcode(3, 0),
+    "RESP_PAIR": Opcode(4, 2),
+    "ACK_RESP": Opcode(5, 2),
+    "EMOTE": Opcode(6, 3),
+    "MONKEY": Opcode(7, 2),
+    "HIDDEN_OBJECT": Opcode(8, 2),
 }
 REV_IR_OPCODES = {val.code: key for key, val in IR_OPCODES.items()}
 

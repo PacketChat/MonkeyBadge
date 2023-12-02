@@ -3,6 +3,7 @@ import config
 import network
 from library.ota.update import OTA
 
+
 async def connect_to_wifi(ssid, password):
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -20,7 +21,7 @@ async def connect_to_wifi(ssid, password):
                 break
         else:
             print("Wi-Fi connection timeout.")
- 
+
 
 async def check_ota():
     # TODO: Set this to false before shipping
@@ -28,7 +29,7 @@ async def check_ota():
     with OTA(verbose=True) as ota:
         ota.from_json(config.UPDATE_URL)
 
-print("Performing POST")
-print("Preforming power on OTA check")
-asyncio.run(connect_to_wifi(config.WIFI_SSID, config.WIFI_PASSWORD))
 
+print("Performing POST")
+print("Performing power on OTA check")
+asyncio.run(connect_to_wifi(config.WIFI_SSID, config.WIFI_PASSWORD))

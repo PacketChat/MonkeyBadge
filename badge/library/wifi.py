@@ -1,7 +1,6 @@
 import network
 import ubinascii
-import uasyncio as asyncio
-import utime  # MicroPython module for time functions
+
 
 def get_mac(wlan):
     """
@@ -9,8 +8,7 @@ def get_mac(wlan):
 
     :return: The MAC address of the WiFi interface
     """
-    return ubinascii.hexlify(wlan.config('mac'), ':').decode()
-
+    return ubinascii.hexlify(wlan.config("mac"), ":").decode()
 
 
 class WiFiManager:
@@ -24,7 +22,7 @@ class WiFiManager:
         self.password = password
         self.wlan = network.WLAN(network.STA_IF)
 
-    async def connect(self):
+    def connect(self):
         """
         Connect to the WiFi network
         :return: None
@@ -32,12 +30,12 @@ class WiFiManager:
         self.wlan.active(False)
         self.wlan.active(True)
         if not self.wlan.isconnected():
-            print('Connecting to network {}...'.format(self.ssid))
+            print("Connecting to network {}...".format(self.ssid))
             self.wlan.connect(self.ssid, self.password)
 
         return self.wlan.isconnected()
 
-    async def get_status(self):
+    def get_status(self):
         """
         Get the status of the WiFi connection
         :return: A tuple containing the status of the WiFi connection
@@ -57,7 +55,7 @@ class WiFiManager:
 
         :return: The MAC address of the WiFi interface
         """
-        return ubinascii.hexlify(self.wlan.config('mac'),':').decode()
+        return ubinascii.hexlify(self.wlan.config("mac"), ":").decode()
 
     def get_wifi_strength(self):
         """
@@ -65,4 +63,4 @@ class WiFiManager:
 
         :return: The WiFi signal strength
         """
-        return int(self.wlan.status('rssi'))
+        return int(self.wlan.status("rssi"))

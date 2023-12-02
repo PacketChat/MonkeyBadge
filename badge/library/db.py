@@ -1,4 +1,6 @@
 import btree
+import machine
+
 
 class dbtree:
     def __init__(self):
@@ -7,7 +9,11 @@ class dbtree:
         except OSError:
             self.file = open("badgedb", "w+b")
 
-        self.db = btree.open(self.file)
+        try:
+            self.db = btree.open(self.file)
+        except Exception as err:
+            print(f"failed to open btree, err: {err}. trying to recover")
+            machine.reset()
 
     def set(self, key, value):
         """
@@ -15,12 +21,11 @@ class dbtree:
         """
         try:
             self.db[key] = value
-            self.db.flush()
+            self.db.flush()  # type: ignore
             return True
         except Exception as err:
             print(f"dbtree.set: type {type(err)}: {err}")
             return False
-
 
     def get(self, key):
         """
@@ -28,9 +33,9 @@ class dbtree:
 
         will always return a string, not bytes
         """
-        try: 
+        try:
             result = self.db[key]
-            self.db.flush()
+            self.db.flush()  # type: ignore
             return result.decode()
         except Exception as err:
             print(f"dbtree.get: type {type(err)}: {err}")

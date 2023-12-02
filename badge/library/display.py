@@ -1,11 +1,11 @@
 from machine import Pin, SoftI2C
-import _thread as thread
 import framebuf
 import ssd1306
-import time
-import uasyncio as asyncio
 
 # 'HCcircle', 60x60px
+
+# deactivate black temporarily
+# fmt: off
 HC_LOGO = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f,
     0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07, 0xff, 0xfe, 0x00, 0x00, 0x00,
@@ -48,6 +48,7 @@ HC_LOGO = [
     0x00, 0x00, 0x07, 0xff, 0xfe, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f,
     0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 ]
+# fmt: on
 
 
 class DisplayHandler:
@@ -71,12 +72,15 @@ class DisplayHandler:
         self.i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin))
         self.display = ssd1306.SSD1306_I2C(width, height, self.i2c)
 
-        self.header_right = framebuf.FrameBuffer(bytearray(48), 48, 8,
-                                                 framebuf.MONO_HLSB)
-        self.header_left = framebuf.FrameBuffer(bytearray(80), 80, 8,
-                                                framebuf.MONO_HLSB)
-        self.body = framebuf.FrameBuffer(bytearray(128 * 7), 128, 8 * 7,
-                                         framebuf.MONO_HLSB)
+        self.header_right = framebuf.FrameBuffer(
+            bytearray(48), 48, 8, framebuf.MONO_HLSB
+        )
+        self.header_left = framebuf.FrameBuffer(
+            bytearray(80), 80, 8, framebuf.MONO_HLSB
+        )
+        self.body = framebuf.FrameBuffer(
+            bytearray(128 * 7), 128, 8 * 7, framebuf.MONO_HLSB
+        )
 
         # header status
         self.muted = False
@@ -99,32 +103,27 @@ class DisplayHandler:
         self._update_status()
 
     def _body_from(self, i):
-        display_items = self.menu_items[i:i + 7]
+        display_items = self.menu_items[i : i + 7]
         new_index = self.menu_index - i
         for j, item in enumerate(display_items):
-            text = '{} {}'.format(
-                    '>' if j == new_index else ' ',
-                    item
-            )
+            text = "{} {}".format(">" if j == new_index else " ", item)
             self.body.text(text, 0, 8 * j, 1)
 
     def _update_status(self):
         if self.fullscreen:
             self._unfullscreen()
         if self.wifi_status is None:
-            wifi_msg = '???'
+            wifi_msg = "???"
         elif self.wifi_status >= -45:
-            wifi_msg = '.'
+            wifi_msg = "."
         elif self.wifi_status >= -65:
-            wifi_msg = '.o'
+            wifi_msg = ".o"
         else:
-            wifi_msg = '.oO'
+            wifi_msg = ".oO"
 
         self.header_right.fill(0)
-        status = '{}{} {}'.format(
-                'm' if self.muted else 'u',
-                'I' if self.ir_status else 'i',
-                wifi_msg
+        status = "{}{} {}".format(
+            "m" if self.muted else "u", "I" if self.ir_status else "i", wifi_msg
         )
 
         self.header_right.text(status, 0, 0, 1)
@@ -223,9 +222,20 @@ class DisplayHandler:
 
     def print_logo(self):
         """Prints the HushCon Logo"""
-        fbuf = framebuf.FrameBuffer(bytearray(HC_LOGO),
-                                    60, 60, framebuf.MONO_HLSB)
+        fbuf = framebuf.FrameBuffer(bytearray(HC_LOGO), 60, 60, framebuf.MONO_HLSB)
         self.display.fill(0)
         self.display.blit(fbuf, 34, 2)
         self.display.show()
         self.fullscreen = True
+
+    def print_lines(self, lines):
+        """
+        Display text on the OLED screen.
+
+        Args:
+            list of strings, we only print the first 6 elements of the list.
+        """
+        self.clear()
+        for i, line in enumerate(lines):
+            self.display.text(line, 0, i * 11, 1)
+        self.display.show()

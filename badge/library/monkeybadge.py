@@ -1,4 +1,3 @@
-from machine import Pin
 import micropython
 import network
 import time
@@ -19,16 +18,19 @@ import library.wifi as wifi
 from library.ota.update import OTA as OTAUpdate
 import library.ota.rollback as OTARollback
 
-#from library.ir_rx.nec import NEC_16 as NECRx
+# from library.ir_rx.nec import NEC_16 as NECRx
 import config  # Import the config file
 import re
 
-__version__ = '0.2.0'
+__version__ = "0.2.1"
+
 
 class MonkeyBadge:
     def __init__(self):
         """
-        Initalize the MonkeyBadge class - this class is used to interact with the MonkeyBadge server API
+        Initalize the MonkeyBadge class - this class is used to interact with the
+        MonkeyBadge server API
+
         :param uuid: The UUID of the badge
         """
         # anything in the calls queue should return true on success and false
@@ -47,14 +49,21 @@ class MonkeyBadge:
         self.wlan = network.WLAN(network.STA_IF)
 
         # Display Init
-        self.display = DisplayHandler(config.OLED_WIDTH,
-                                      config.OLED_HEIGHT,
-                                      config.OLED_SDA_PIN,
-                                      config.OLED_SCL_PIN)
+        self.display = DisplayHandler(
+            config.OLED_WIDTH,
+            config.OLED_HEIGHT,
+            config.OLED_SDA_PIN,
+            config.OLED_SCL_PIN,
+        )
         self._log = []
+
+        # OTA urls
+        self.reset_url = config.RESET_URL
+        self.update_url = config.UPDATE_URL
 
         # Led init
         self.leds = LEDHandler()
+        self.leds.do_all_off()
 
         # IR
         self.infrared = IR()
@@ -63,7 +72,6 @@ class MonkeyBadge:
         # boot
         print("Badge Booting")
         self.display.print_logo()
-
 
         # TODO possibly set this as a property of the game client
         self.registration_key = config.REG_KEY
@@ -85,9 +93,8 @@ class MonkeyBadge:
         self.intro = {"complete": False, "enabled": False}
 
         # use the mac as the UUID
-        self.badge_uuid = re.sub(':', '-', str(wifi.get_mac(self.wlan)))
+        self.badge_uuid = re.sub(":", "-", str(wifi.get_mac(self.wlan)))
         print("Badge UUID: %s" % (self.badge_uuid))
-
 
         print("Confirming firmware boot success. Cancelling OTA Rollback")
         OTARollback.cancel()
@@ -102,92 +109,113 @@ class MonkeyBadge:
         self.about_menu = Menu([], title="About", parent=self.main_menu)
 
         self.volume_menu = Menu([], title="Volume", parent=self.radio_menu)
-        self.volume_menu.items.extend([
-            MenuItem("Volume", self.donothing, dynamic_text=self.display_vol),
-            MenuItem("Volume Up", self.menu_volume_up),
-            MenuItem("Volume Down", self.menu_volume_down)
-        ])
-        self.challenge_menu = Menu([],
-                                     title='Chlng Status',
-                                     parent=self.about_menu)
-        self.main_menu.items.extend([
-            MenuItem("Radio", submenu=self.radio_menu),
-            MenuItem("Settings", submenu=self.settings_menu),
-            MenuItem("Lightshow", submenu=self.lightshow_menu),
-            MenuItem("IR", submenu=self.ir_menu),
-            MenuItem("Social", submenu=self.social_menu),
-            MenuItem("About", submenu=self.about_menu),
-        ])
-        self.about_menu.items.extend([
-            MenuItem("Version", self.display_menu('Version', __version__)),
-            MenuItem("Chllnge Status", submenu=self.challenge_menu),
-            MenuItem("Credits", self.display_menu('Credits',
-                                                  'temtel',
-                                                  'crackerjack',
-                                                  'thephreak',
-                                                  'faxanadu',
-                                                  'redbeard',
-                                                  'numeral')),
-            MenuItem("License", self.display_menu('License',
-                                                  "The Don't",
-                                                  'Ask Me',
-                                                  'About It',
-                                                  'License',
-                                                  '',
-                                                  'Copying and',
-                                                  'distribution',
-                                                  'of this code,',
-                                                  'with or',
-                                                  'without',
-                                                  'modification,',
-                                                  'are permitted',
-                                                  'in any medium',
-                                                  'provided you',
-                                                  'do not',
-                                                  'contact the',
-                                                  'author about',
-                                                  'the code or',
-                                                  'any problems',
-                                                  'you are',
-                                                  'having with',
-                                                  'the code',
-                                                  )),
-            MenuItem("Log", self.select_log),
-        ])
-        self.ir_menu.items.extend([
-            MenuItem("Send Message", "pass"),
-            MenuItem("Receive Message", "pass")
-        ])
-        self.social_menu.items.extend([
-            MenuItem("Find Badges", self.find_badges),
-            MenuItem("Seen Badges", self.seen_badges_action),
-        ])
-        self.radio_menu.items.extend([
-            MenuItem("Frequency", self.donothing, dynamic_text=self.display_freq),
-            MenuItem("Seek Up", self.menu_seek_up),
-            MenuItem("Seek Down", self.menu_seek_down),
-            MenuItem("Volume", submenu=self.volume_menu),
-        ])
-        self.settings_menu.items.extend([
-            MenuItem("OLED Brightness", "pass"),
-            MenuItem("LED Brightness", "pass"),
-            #        MenuItem("Volume", "pass"),
-            MenuItem("Debounce", "pass"),
-            MenuItem("OTA Update", self.update_badge),
-            MenuItem("Reset Badge", self.reset_badge)
-        ])
+        self.volume_menu.items.extend(
+            [
+                MenuItem("Volume", self.donothing, dynamic_text=self.display_vol),
+                MenuItem("Volume Up", self.menu_volume_up),
+                MenuItem("Volume Down", self.menu_volume_down),
+            ]
+        )
+        self.challenge_menu = Menu([], title="Game Status", parent=self.about_menu)
+        self.main_menu.items.extend(
+            [
+                MenuItem("Radio", submenu=self.radio_menu),
+                MenuItem("Settings", submenu=self.settings_menu),
+                MenuItem("Lightshow", submenu=self.lightshow_menu),
+                MenuItem("IR", submenu=self.ir_menu),
+                MenuItem("Social", submenu=self.social_menu),
+                MenuItem("About", submenu=self.about_menu),
+            ]
+        )
+        self.about_menu.items.extend(
+            [
+                MenuItem("Version", self.display_menu("Version", __version__)),
+                MenuItem("Chllnge Status", submenu=self.challenge_menu),
+                MenuItem(
+                    "Credits",
+                    self.display_menu(
+                        "Credits",
+                        "temtel",
+                        "crackerjack",
+                        "thephreak",
+                        "faxanadu",
+                        "redbeard",
+                        "numeral",
+                    ),
+                ),
+                MenuItem(
+                    "License",
+                    self.display_menu(
+                        "License",
+                        "The Don't",
+                        "Ask Me",
+                        "About It",
+                        "License",
+                        "",
+                        "Copying and",
+                        "distribution",
+                        "of this code,",
+                        "with or",
+                        "without",
+                        "modification,",
+                        "are permitted",
+                        "in any medium",
+                        "provided you",
+                        "do not",
+                        "contact the",
+                        "author about",
+                        "the code or",
+                        "any problems",
+                        "you are",
+                        "having with",
+                        "the code",
+                    ),
+                ),
+                MenuItem("Log", self.select_log),
+            ]
+        )
+        self.ir_menu.items.extend(
+            [MenuItem("Send Message", "pass"), MenuItem("Receive Message", "pass")]
+        )
+        self.social_menu.items.extend(
+            [
+                MenuItem("Find Badges", self.find_badges),
+                MenuItem("Seen Badges", self.seen_badges_action),
+            ]
+        )
+        self.radio_menu.items.extend(
+            [
+                MenuItem("Frequency", self.donothing, dynamic_text=self.display_freq),
+                MenuItem("Seek Up", self.menu_seek_up),
+                MenuItem("Seek Down", self.menu_seek_down),
+                MenuItem("Volume", submenu=self.volume_menu),
+            ]
+        )
+        self.settings_menu.items.extend(
+            [
+                MenuItem("OLED Brightness", "pass"),
+                MenuItem("LED Brightness", "pass"),
+                #        MenuItem("Volume", "pass"),
+                MenuItem("Debounce", "pass"),
+                MenuItem("OTA Update", self.update_badge),
+                MenuItem("Reset Badge", self.reset_badge),
+            ]
+        )
 
         def _lightshow(name, *args, **kwargs):
             def _f():
                 self.leds.set_led_lights(name, *args, **kwargs)
                 return self.current_menu
+
             return _f
 
-        self.lightshow_menu.items.extend([
-            MenuItem("popcorn", _lightshow('do_popcorn_effect')),
-            MenuItem("roll call", _lightshow('do_monkey_roll_call')),
-            MenuItem("heartbeat", _lightshow('do_heartbeat')),
-        ])
+        self.lightshow_menu.items.extend(
+            [
+                MenuItem("popcorn", _lightshow("do_popcorn_effect")),
+                MenuItem("roll call", _lightshow("do_monkey_roll_call")),
+                MenuItem("heartbeat", _lightshow("do_heartbeat")),
+            ]
+        )
 
     @property
     def infrared_id(self):
@@ -209,16 +237,20 @@ class MonkeyBadge:
 
     def if_wifi(func):
         """Decorator to only run if wifi is enabled"""
+
         def _f(self, *args, **kwargs):
             if self.wlan.isconnected():
-                return func(self, *args, **kwargs)
+                return func(self, *args, **kwargs)  # type: ignore
+
         return _f
 
     def if_ir(func):
         """Decorator to only run if IR is enabled"""
+
         def _f(self, *args, **kwargs):
             if self.infrared.enabled:
-                return func(self, *args, **kwargs)
+                return func(self, *args, **kwargs)  # type: ignore
+
         return _f
 
     def lock_station(self, freq):
@@ -241,13 +273,13 @@ class MonkeyBadge:
         return self.current_menu
 
     def menu_seek_up(self):
-        if self.lock_radio_station == False:
+        if not self.lock_radio_station:
             self.radio.seekUp()
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
     def menu_seek_down(self):
-        if self.lock_radio_station == False:
+        if not self.lock_radio_station:
             self.radio.seekDown()
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
@@ -259,17 +291,19 @@ class MonkeyBadge:
         return f"Volume: {self.radio.volume}"
 
     def flash_badge(self, url, verbose=False):
-        # TODO: change the state of the screen to show that the badge is updating and resetting
+        # TODO: change the state of the screen to show that
+        # the badge is updating and resetting
         try:
-            #print(OTAStatus.status())
+            # print(OTAStatus.status())
             with OTAUpdate(reboot=True, verbose=verbose) as ota:
                 ota.from_json(url)
         except Exception as err:
             print(f"Unexpected {err=}, {type(err)=}")
-#            if err == -202:
-#                print("Unable to process update: Network Error")
-#            else:
-#                print("Unable to flash device %s" % (err))
+
+    #            if err == -202:
+    #                print("Unable to process update: Network Error")
+    #            else:
+    #                print("Unable to flash device %s" % (err))
 
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
@@ -297,32 +331,31 @@ class MonkeyBadge:
     def find_badges(self):
         n = self.infrared.send_discover()
         if n == 0:
-            self.log = 'findbadge fail'
+            self.log = "findbadge fail"
 
     def seen_badges_action(self):
         now = time.ticks_ms()
-        sbmenu = Menu([], 'Seen Badges', parent=self.current_menu)
-        sbmenu.items.extend([
-            MenuItem(f'{badge}: {time.ticks_diff(now, last_seen)//1000}s ago')
-            for badge, last_seen in self.seen_badges.items()
-        ])
+        sbmenu = Menu([], "Seen Badges", parent=self.current_menu)
+        sbmenu.items.extend(
+            [
+                MenuItem(f"{badge}: {time.ticks_diff(now, last_seen)//1000}s ago")
+                for badge, last_seen in self.seen_badges.items()
+            ]
+        )
         return sbmenu
 
     def select_log(self):
-        lmenu = Menu([], 'Log', parent=self.current_menu)
-        lmenu.items.extend([
-            MenuItem(f'{log}') for log in self.log
-        ])
+        lmenu = Menu([], "Log", parent=self.current_menu)
+        lmenu.items.extend([MenuItem(f"{log}") for log in self.log])
         return lmenu
 
     def display_menu(self, name, *args):
         def _f():
             print(name, args)
             dmenu = Menu([], name, parent=self.current_menu)
-            dmenu.items.extend([
-                MenuItem(arg) for arg in args
-            ])
+            dmenu.items.extend([MenuItem(arg) for arg in args])
             return dmenu
+
         return _f
 
     # noop
@@ -386,30 +419,33 @@ class MonkeyBadge:
 
     def load_gamestate(self, payload=None):
         if payload:
-            print('loading from argument')
+            print("loading from argument")
             j = payload
         else:
-            state = self.db.get('state')
+            state = self.db.get("state")
             if not state:
                 return
             j = json.loads(state)
 
         if j:
             print("loaded gamestate {}".format(self.infrared_id))
-            self.handle = j['badgeHandle']
-            self.apitoken = j['token']
-            self.infrared_id = j['IR_ID']
-            if self.intro['complete'] != j['intro']['complete'] and \
-                    j['intro']['complete']:
-                self.challenge_menu.items.append(MenuItem('Intro Complete',
-                                                          self.donothing))
-            self.intro = j['intro']
-            if not self.infrared.pairing and self.intro['complete']:
+            self.handle = j["badgeHandle"]
+            self.apitoken = j["token"]
+            self.infrared_id = j["IR_ID"]
+            if (
+                self.intro["complete"] != j["intro"]["complete"]
+                and j["intro"]["complete"]
+            ):
+                self.challenge_menu.items.append(
+                    MenuItem("Intro Complete", self.donothing)
+                )
+            self.intro = j["intro"]
+            if not self.infrared.pairing and self.intro["complete"]:
                 self.infrared.enable_pairing()
-            self.challenge1 = j['challenge1']
-            self.challenge2 = j['challenge2']
-            self.challenge3 = j['challenge3']
-            self.current_challenge = j['current_challenge']
+            self.challenge1 = j["challenge1"]
+            self.challenge2 = j["challenge2"]
+            self.challenge3 = j["challenge3"]
+            self.current_challenge = j["current_challenge"]
         else:
             print("No state to load")
 
@@ -417,15 +453,16 @@ class MonkeyBadge:
         request_body = {
             "handle": self.handle,
             "key": self.registration_key,
-            "myUUID": self.badge_uuid
-            }
+            "myUUID": self.badge_uuid,
+        }
 
         r = self.gameclient.reg_request(request_body)
 
         if r:
-            print("registration successful")
-            self.apitoken = r['token']
+            print("Registration successful")
+            self.apitoken = r["token"]
             self.db.set("token", self.apitoken)
+            self.save_gamestate(r)
         else:
             print("registration failed")
 
@@ -463,21 +500,20 @@ class MonkeyBadge:
                 print("Badge checkin failed")
         # time.sleep_ms(config.CHECKIN_PERIOD * 1000)
 
-
     @if_ir
     def infrared_check(self):
         if self.infrared.msgs:
-            print('infrared check')
+            print("infrared check")
             while self.infrared.msgs:
                 opcode, sender, extra = self.infrared.msgs.pop()
-                if opcode == 'DISCOVER':
-                    self.log = f'DISC: {sender}'
+                if opcode == "DISCOVER":
+                    self.log = f"DISC: {sender}"
                     self.infrared.send_here()
-                elif opcode == 'HERE':
-                    self.log = f'HERE: {sender}'
+                elif opcode == "HERE":
+                    self.log = f"HERE: {sender}"
                     self.seen_badges[sender] = time.ticks_ms()
-                elif opcode == 'INIT_PAIR':
-                    self.log = f'PAIR: {sender}'
+                elif opcode == "INIT_PAIR":
+                    self.log = f"PAIR: {sender}"
                     self.infrared.send_resp_pair(sender)
 
     def initialize_badge(self):
@@ -486,23 +522,11 @@ class MonkeyBadge:
 
         # Setup button handler
         self.button_handler = ButtonHandler(
-                self._left_up_butback,
-                self._left_down_butback,
-                self._center_butback,
-                self._right_butback
+            self._left_up_butback,
+            self._left_down_butback,
+            self._center_butback,
+            self._right_butback,
         )
-
-        # Create tasks
-        # checkin_task = asyncio.create_task(self.checkin())
-        # network_check_task = asyncio.create_task(self.wifi_check())
-        # infrared_task = asyncio.create_task(self.infrared_check())
-        # ir_recv_task = asyncio.create_task(self.infrared.recv())
-        # tasks = {
-        #         'checkin_task': checkin_task,
-        #         'network_check_task': network_check_task,
-        #         'infrared_check_task': infrared_task,
-        #         'ir_recv_task': ir_recv_task,
-        # }
 
         # always boot up to the main menu.
         self.current_menu = self.main_menu
@@ -531,20 +555,25 @@ class MonkeyBadge:
                 if not success:
                     self._calls_queue.append(call)
 
-            # wlan, no blocking
-            print(self.wlan.ifconfig()[0], self.last_checkin, now)
+            # the badge is waiting to execute the next call
+            print(".", end="")
+            # print(f"IP: {self.wlan.ifconfig()[0]}, {self.last_checkin} {now}")
+
             if not self.wlan.isconnected():
                 self.display.set_wifi_status(None)
                 self.wlan.active(True)
                 self.wlan.connect(config.WIFI_SSID, config.WIFI_PASSWORD)
             else:
-                self.display.set_wifi_status(int(self.wlan.status('rssi')))
+                self.display.set_wifi_status(int(self.wlan.status("rssi")))
 
             # checkin, blocking
-            if time.ticks_diff(now,
-                               self.last_checkin) >= config.CHECKIN_PERIOD:
-                self.checkin()
-                self.last_checkin = now
+            if time.ticks_diff(now, self.last_checkin) >= config.CHECKIN_PERIOD:
+                try:
+                    print(".")
+                    self.checkin()
+                    self.last_checkin = now
+                except Exception as err:
+                    pass
 
             # update ir status
             self.display.set_ir_status(self.infrared.enabled)
@@ -554,10 +583,12 @@ class MonkeyBadge:
             self.clean_seen_badges(now)
 
             # check whether we should move to intro mode
-            if self.intro['complete'] == 0 and \
-                    self.config_konami_win not in self._calls_queue and \
-                    self.intro['enabled'] == 1 and \
-                    self.current_challenge == "intro":
+            if (
+                self.intro["complete"] == 0
+                and self.config_konami_win not in self._calls_queue
+                and self.intro["enabled"] == 1
+                and self.current_challenge == "intro"
+            ):
                 self.deinitialize()
                 konami.main()
                 self.initialize_badge()
