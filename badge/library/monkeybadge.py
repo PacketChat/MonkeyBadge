@@ -606,7 +606,7 @@ class MonkeyBadge:
                     print(".")
                     self.checkin()
                     self.last_checkin = now
-                except Exception as err:
+                except Exception:
                     pass
 
             # update ir status
