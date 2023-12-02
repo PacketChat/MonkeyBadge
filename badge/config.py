@@ -21,7 +21,7 @@ def getNVS(key, size):
 def eraseNVS(key):
     try:
         nvs.erase_key(key)
-    except:
+    except Exception:
         # TODO: if we don't mask this users will likely see they can modify the value "API_SERVER"
         # pass
         print("Unable to erase key {}".format(key))
@@ -29,17 +29,17 @@ def eraseNVS(key):
 # Wifi Config
 try:
     WIFI_SSID = getNVS("WIFI_SSID", 32)
-except:
+except Exception:
     pass
 
 try:
     WIFI_PASSWORD = getNVS("WIFI_PASSWORD", 63)
-except:
+except Exception:
     pass
 
 try:
     API_SERVER = getNVS("API_SERVER", 255)
-except:
+except Exception:
     pass
 
 RESET_URL = "https://update.kafka.tel/firmware/reset.json"
