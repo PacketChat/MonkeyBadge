@@ -76,6 +76,10 @@ class DisplayHandler:
         self.i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin))
         self.display = ssd1306.SSD1306_I2C(width, height, self.i2c)
 
+        # self.timed_message = framebuf.FrameBuffer(
+        #    bytearray(930), 124, 60, framebuf.MONO_HLSB
+        # )
+
         self.header_right = framebuf.FrameBuffer(
             bytearray(48), 48, 8, framebuf.MONO_HLSB
         )
@@ -85,11 +89,9 @@ class DisplayHandler:
         self.body = framebuf.FrameBuffer(
             bytearray(128 * 7), 128, 8 * 7, framebuf.MONO_HLSB
         )
-
         self.timed_message = framebuf.FrameBuffer(
-            bytearray(930), 124, 60, framebuf.MONO_HLSB
+            bytearray(1000), 124, 60, framebuf.MONO_HLSB
         )
-
         # timing messages
         self.showing_timed = False
         self.timed_expiration = 0
