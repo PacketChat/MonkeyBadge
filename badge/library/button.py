@@ -1,6 +1,5 @@
 import micropython
 from machine import Pin
-import uasyncio as asyncio
 import utime
 
 
