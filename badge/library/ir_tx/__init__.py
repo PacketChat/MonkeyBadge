@@ -9,8 +9,8 @@ from micropython import const
 from array import array
 from time import ticks_us, ticks_diff
 
-ESP32 = platform == 'esp32'  # Loboris not supported owing to RMT
-RP2 = platform == 'rp2'
+ESP32 = platform == "esp32"  # Loboris not supported owing to RMT
+RP2 = platform == "rp2"
 if ESP32:
     from esp32 import RMT
 elif RP2:
@@ -25,6 +25,7 @@ else:
 # Shared by NEC
 STOP = const(0)  # End of data
 
+
 # IR abstract base class. Array holds periods in μs between toggling 36/38KHz
 # carrier on or off. Physical transmission occurs in an ISR context controlled
 # by timer 2 and timer 5. See TRANSMITTER.md for details of operation.
@@ -36,16 +37,18 @@ class IR:
     @classmethod
     def active_low(cls):
         if ESP32:
-            raise ValueError('Cannot set active low on ESP32')
+            raise ValueError("Cannot set active low on ESP32")
         cls._active_high = False
         cls._space = 100
 
     def __init__(self, pin, cfreq, asize, duty, verbose):
         if ESP32:
-            self._rmt = RMT(0, pin=pin, clock_div=80, tx_carrier = (cfreq, duty, 1))
+            self._rmt = RMT(0, pin=pin, clock_div=80, tx_carrier=(cfreq, duty, 1))
             # 1μs resolution
         elif RP2:  # PIO-based RMT-like device
-            self._rmt = RP2_RMT(pin_pulse=None, carrier=(pin, cfreq, duty))  # 1μs resolution
+            self._rmt = RP2_RMT(
+                pin_pulse=None, carrier=(pin, cfreq, duty)
+            )  # 1μs resolution
             asize += 1  # Allow for possible extra space pulse
         else:  # Pyboard
             if not IR._active_high:
@@ -57,7 +60,7 @@ class IR:
             self._duty = duty
             self._tim = Timer(5)  # Timer 5 controls carrier on/off times
         self._tcb = self._cb  # Pre-allocate
-        self._arr = array('H', 0 for _ in range(asize))  # on/off times (μs)
+        self._arr = array("H", (0 for _ in range(asize)))  # on/off times (μs)
         self._mva = memoryview(self._arr)
         # Subclass interface
         self.verbose = verbose
@@ -81,18 +84,18 @@ class IR:
         t = ticks_us()
         if validate:
             if addr > self.valid[0] or addr < 0:
-                raise ValueError('Address out of range', addr)
+                raise ValueError("Address out of range", addr)
             if data > self.valid[1] or data < 0:
-                raise ValueError('Data out of range', data)
+                raise ValueError("Data out of range", data)
             if toggle > self.valid[2] or toggle < 0:
-                raise ValueError('Toggle out of range', toggle)
+                raise ValueError("Toggle out of range", toggle)
         self.aptr = 0  # Inital conditions for tx: index into array
         self.carrier = False
         self.tx(addr, data, toggle)  # Subclass populates ._arr
         self.trigger()  # Initiate transmission
         if self.timeit:
             dt = ticks_diff(ticks_us(), t)
-            print('Time = {}μs'.format(dt))
+            print("Time = {}μs".format(dt))
 
     # Subclass interface
     def trigger(self):  # Used by NEC to initiate a repeat frame
@@ -111,18 +114,17 @@ class IR:
             self._arr[self.aptr] = t
             self.aptr += 1
             self.carrier = not self.carrier  # Keep track of carrier state
-            self.verbose and print('append', t, 'carrier', self.carrier)
+            self.verbose and print("append", t, "carrier", self.carrier)
 
     def add(self, t):  # Increase last time value (for biphase)
         assert t > 0
-        self.verbose and print('add', t)
+        self.verbose and print("add", t)
         # .carrier unaffected
         self._arr[self.aptr - 1] += t
 
 
 # Given an iterable (e.g. list or tuple) of times, emit it as an IR stream.
 class Player(IR):
-
     def __init__(self, pin, freq=38000, verbose=False):  # NEC specifies 38KHz
         super().__init__(pin, freq, 68, 33, verbose)  # Measured duty ratio 33%
 

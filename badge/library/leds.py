@@ -5,6 +5,7 @@ import random
 import math
 import uasyncio as asyncio
 
+
 # Utility Functions:
 def scale_color(rgb, brightness_factor):
     """
@@ -16,6 +17,7 @@ def scale_color(rgb, brightness_factor):
     :return: Scaled RGB tuple.
     """
     return tuple(int(val * brightness_factor) for val in rgb)
+
 
 # Classes:
 class NeoPixelLight:
@@ -47,6 +49,7 @@ class NeoPixelLight:
         self.np.fill(scale_color(color, self.brightness))
         self.np.write()
 
+
 class LEDHandler:
     def __init__(self):
         """
@@ -60,9 +63,7 @@ class LEDHandler:
 
     def set_led_lights(self, lights_func, *args, **kwargs):
         func = getattr(self, lights_func)
-        self.led_task = asyncio.create_task(
-                self.led_run_async(func, args, kwargs)
-        )
+        self.led_task = asyncio.create_task(self.led_run_async(func, args, kwargs))
 
     def do_all_off(self):
         """Turn off all LEDs."""
@@ -106,7 +107,7 @@ class LEDHandler:
 
     def do_kans_wink(self):
         """Simulate Canz's winking eye."""
-        print('Canz has an evil left eye. Did it wink at you?')
+        print("Canz has an evil left eye. Did it wink at you?")
         evileye = machine.Pin(2, machine.Pin.OUT)
         self._blink(evileye)
 
@@ -149,7 +150,7 @@ class LEDHandler:
                 self.np_light.set_color(i, color)
             # Pause for 5 ms to create a smooth transition between colors:
             time.sleep_ms(speed)
-        self.do_all_off() # Turn off all LEDs after cycling through the rainbow.
+        self.do_all_off()  # Turn off all LEDs after cycling through the rainbow.
 
     def do_firework_burst(self, index, color, fade_duration_ms=100, fade_steps=10):
         """
@@ -172,14 +173,16 @@ class LEDHandler:
 
         # Fade out the color over a series of steps:
         for i in range(fade_steps):
-
             # Calculate the fading factor for this step based on its position
             # in the fade sequence:
             fade_factor = (fade_steps - i) / fade_steps
 
             # Adjust the color's intensity based on the fade factor and set the
             # modified color:
-            self.np_light.set_color(index, (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)))
+            self.np_light.set_color(
+                index,
+                (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)),
+            )
 
             # Wait for the specified delay before proceeding to the next fade
             # step:
@@ -205,7 +208,11 @@ class LEDHandler:
             index = random.randint(0, 6)
 
             # Choose a random color:
-            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
 
             # Simulate a firework burst on the chosen LED with the chosen
             # color:
@@ -214,7 +221,9 @@ class LEDHandler:
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_grouped_fireworks_show(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
+    def do_grouped_fireworks_show(
+        self, duration_s=10, min_delay_ms=50, max_delay_ms=300
+    ):
         """
         Runs a fireworks show with grouped bursts for the specified duration.
 
@@ -225,9 +234,9 @@ class LEDHandler:
         """
         end_time = time.ticks_ms() + duration_s * 1000
         groups = [
-            [0, 1],      # Group for NeoPixels 1 and 2.
-            [2, 3],      # Group for NeoPixels 3 and 4.
-            [4, 5, 6]    # Group for NeoPixels 5, 6, and 7.
+            [0, 1],  # Group for NeoPixels 1 and 2.
+            [2, 3],  # Group for NeoPixels 3 and 4.
+            [4, 5, 6],  # Group for NeoPixels 5, 6, and 7.
         ]
 
         while time.ticks_ms() < end_time:
@@ -235,7 +244,11 @@ class LEDHandler:
             group = random.choice(groups)
 
             # Choose a random bright color for the group burst:
-            color = (random.randint(100, 255), random.randint(0, 255), random.randint(0, 255))
+            color = (
+                random.randint(100, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
 
             # Simulate a firework burst for the LEDs in the chosen group:
             for index in group:
@@ -271,7 +284,9 @@ class LEDHandler:
         # heartbeat is "off"):
         time.sleep_ms(int(pulse_duration * 500))
 
-    def do_double_heartbeat(self, color=(255, 0, 0), beats_per_minute=60, pause_between_beats_ms=500):
+    def do_double_heartbeat(
+        self, color=(255, 0, 0), beats_per_minute=60, pause_between_beats_ms=500
+    ):
         """
         Simulate a double heartbeat pulse with a quick second beat.
 
@@ -335,7 +350,6 @@ class LEDHandler:
 
         # Continue the chaser effect until the specified duration is reached:
         while time.ticks_ms() < end_time:
-
             # Turn off all LEDs to prepare for the next chaser position:
             self.do_all_off()
 
@@ -369,13 +383,16 @@ class LEDHandler:
 
         # Continue the twinkle effect until the specified duration is reached:
         while time.ticks_ms() < end_time:
-
             # Randomly select an LED index to twinkle:
             index = random.randint(0, 6)
 
             # Generate a random color for the LED twinkle. The red component is
             # kept relatively bright to ensure visibility:
-            color = (random.randint(100, 255), random.randint(0, 255), random.randint(0, 255))
+            color = (
+                random.randint(100, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
 
             # Set the randomly chosen LED to the randomly generated color:
             self.np_light.set_color(index, color)
@@ -387,7 +404,9 @@ class LEDHandler:
             # Turn off all LEDs to simulate the end of a twinkle:
             self.do_all_off()
 
-    def do_gradient_fade(self, start_color=(255, 0, 0), end_color=(0, 0, 255), duration_s=10):
+    def do_gradient_fade(
+        self, start_color=(255, 0, 0), end_color=(0, 0, 255), duration_s=10
+    ):
         """
         Fade from start color to end color across all LEDs.
 
@@ -406,7 +425,6 @@ class LEDHandler:
 
         # Iterate over each step to gradually change the LED colors:
         for step in range(steps + 1):
-
             # Calculate the ratio of completion for the fade:
             ratio = step / steps
 
@@ -415,7 +433,7 @@ class LEDHandler:
             color = (
                 int(start_color[0] * (1 - ratio) + end_color[0] * ratio),
                 int(start_color[1] * (1 - ratio) + end_color[1] * ratio),
-                int(start_color[2] * (1 - ratio) + end_color[2] * ratio)
+                int(start_color[2] * (1 - ratio) + end_color[2] * ratio),
             )
 
             # Set all LEDs to the calculated color for this step:
@@ -446,7 +464,6 @@ class LEDHandler:
 
         # Continue the strobe effect until the ending time is reached:
         while time.ticks_ms() < end_time:
-
             # Turn on each LED with the specified color:
             for i in range(7):
                 self.np_light.set_color(i, color)
@@ -461,7 +478,9 @@ class LEDHandler:
             # flash:
             time.sleep_ms(int(on_time))
 
-    def do_popcorn_effect(self, duration_s=10, pop_duration_ms=50, min_delay_ms=10, max_delay_ms=200):
+    def do_popcorn_effect(
+        self, duration_s=10, pop_duration_ms=50, min_delay_ms=10, max_delay_ms=200
+    ):
         """
         Creates a popcorn effect by randomly illuminating LEDs for short
         durations, this is similiar to the fireworks effect, but doesn't depend
@@ -482,7 +501,11 @@ class LEDHandler:
             index = random.randint(0, 6)
 
             # Generate a random color (RGB values between 0 and 255):
-            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255),
+            )
 
             # Set the randomly chosen LED to the generated color:
             self.np_light.set_color(index, color)
@@ -512,7 +535,7 @@ class LEDHandler:
 
         # Light up all LEDs at the beginning of the countdown:
         for i in range(num_pixels):
-            self.np_light.set_color(i, (0, 100, 100)) # Color for the countdown.
+            self.np_light.set_color(i, (0, 100, 100))  # Color for the countdown.
 
         # Start countdown
         for i in range(num_pixels):
@@ -536,7 +559,7 @@ class LEDHandler:
         groups = [
             ([0, 1], (87, 8, 255)),  # Group 1 (Purple) for NeoPixels 1 and 2.
             ([2, 3], (255, 0, 255)),  # Group 2 (Magenta) for NeoPixels 3 and 4.
-            ([4, 5, 6], (0, 100, 100)) # Group 3 (Cyan) for NeoPixels 5, 6, and 7.
+            ([4, 5, 6], (0, 100, 100)),  # Group 3 (Cyan) for NeoPixels 5, 6, and 7.
         ]
 
         group_index = 0  # Starting with the first group.
@@ -570,7 +593,7 @@ class LEDHandler:
         groups = [
             ([0, 1], (87, 8, 255)),  # Group 1 (Purple) for NeoPixels 1 and 2.
             ([2, 3], (255, 0, 255)),  # Group 2 (Magenta) for NeoPixels 3 and 4.
-            ([4, 5, 6], (0, 100, 100)) # Group 3 (Cyan) for NeoPixels 5, 6, and 7.
+            ([4, 5, 6], (0, 100, 100)),  # Group 3 (Cyan) for NeoPixels 5, 6, and 7.
         ]
 
         while time.ticks_ms() < end_time:
@@ -584,7 +607,16 @@ class LEDHandler:
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_monkey_spaz(self, name, group_indices, group_color, duration_s=5, blink_duration_ms=100, min_delay_ms=100, max_delay_ms=500):
+    def do_monkey_spaz(
+        self,
+        name,
+        group_indices,
+        group_color,
+        duration_s=5,
+        blink_duration_ms=100,
+        min_delay_ms=100,
+        max_delay_ms=500,
+    ):
         """
         Runs a light show with a swelling and blinking group.
 
@@ -604,7 +636,9 @@ class LEDHandler:
             # brightness of the group's LEDs:
             for brightness_factor in range(1, 11):
                 for index in group_indices:
-                    self.np_light.set_color(index, scale_color(group_color, brightness_factor / 10))
+                    self.np_light.set_color(
+                        index, scale_color(group_color, brightness_factor / 10)
+                    )
                 time.sleep_ms(100)
 
             # Simulate blinking by turning the group off and on:
@@ -642,7 +676,7 @@ class LEDHandler:
             color = (
                 int(swell_color[0] * ratio),
                 int(swell_color[1] * ratio),
-                int(swell_color[2] * ratio)
+                int(swell_color[2] * ratio),
             )
             for i in range(7):
                 self.np_light.set_color(i, color)
@@ -676,7 +710,6 @@ class LEDHandler:
             # Blink the current group LEDs back and forth for a bit:
             end_time_group = time.ticks_ms() + delay_per_group * 1000
             while time.ticks_ms() < end_time_group:
-
                 # Alternate a limited number of times (3 in this case):
                 for _ in range(3):
                     for led in group:
@@ -729,7 +762,7 @@ class LEDHandler:
                 for current_color in colors:
                     for led in group:
                         self.np_light.set_color(led, current_color)
-                        time.sleep_ms(200) # Quick alternation for a fast cycle.
+                        time.sleep_ms(200)  # Quick alternation for a fast cycle.
                         self.np_light.set_color(led, dim_white)
                         time.sleep_ms(200)
 
@@ -761,14 +794,13 @@ class LEDHandler:
             (255, 255, 0),
             (0, 100, 100),
             (255, 0, 255),
-            (87, 8, 255)
+            (87, 8, 255),
         ]
 
         end_time = time.ticks_ms() + duration_s * 1000
 
         # Main loop for the duration of the effect:
         while time.ticks_ms() < end_time:
-
             # Randomly choose a vibrant color:
             chosen_color = random.choice(vibrant_colors)
 
@@ -802,7 +834,7 @@ class LEDHandler:
             (255, 255, 0),
             (0, 100, 100),
             (255, 0, 255),
-            (87, 8, 255)
+            (87, 8, 255),
         ]
 
         # 1. Fast Blinking:
@@ -846,7 +878,7 @@ class LEDHandler:
         # Purple, Magenta, Cyan:
         colors = [(87, 8, 255), (255, 0, 255), (0, 100, 100)]
         swell_steps = 20  # Number of steps for swelling up and down.
-        blink_count = 2   # Number of blinks.
+        blink_count = 2  # Number of blinks.
         post_swell_delay = 1337  # Time in ms to wait after the last swell.
 
         # Function for a warm swell effect
@@ -854,7 +886,11 @@ class LEDHandler:
             # Swell up
             for step in range(swell_steps):
                 intensity = step / swell_steps
-                adjusted_color = (int(color[0] * intensity), int(color[1] * intensity), int(color[2] * intensity))
+                adjusted_color = (
+                    int(color[0] * intensity),
+                    int(color[1] * intensity),
+                    int(color[2] * intensity),
+                )
                 for led in group:
                     self.np_light.set_color(led, adjusted_color)
                 time.sleep_ms(50)
@@ -862,13 +898,21 @@ class LEDHandler:
             # Swell down
             for step in range(swell_steps, 0, -1):
                 intensity = step / swell_steps
-                adjusted_color = (int(color[0] * intensity), int(color[1] * intensity), int(color[2] * intensity))
+                adjusted_color = (
+                    int(color[0] * intensity),
+                    int(color[1] * intensity),
+                    int(color[2] * intensity),
+                )
                 for led in group:
                     self.np_light.set_color(led, adjusted_color)
                 time.sleep_ms(50)
 
             # Set to final intensity
-            dim_color = (int(color[0] * final_intensity), int(color[1] * final_intensity), int(color[2] * final_intensity))
+            dim_color = (
+                int(color[0] * final_intensity),
+                int(color[1] * final_intensity),
+                int(color[2] * final_intensity),
+            )
             for led in group:
                 self.np_light.set_color(led, dim_color)
 
@@ -886,7 +930,9 @@ class LEDHandler:
         for index, (group, color) in enumerate(zip(groups, colors)):
             swell(group, color)  # Warm swell effect.
             blink(group, color)  # Blinking effect.
-            swell(group, color, final_intensity=0.2)  # Warm swell effect again with dimming.
+            swell(
+                group, color, final_intensity=0.2
+            )  # Warm swell effect again with dimming.
 
             # For the last group, pause at the dim level before turning off:
             if index == len(groups) - 1:

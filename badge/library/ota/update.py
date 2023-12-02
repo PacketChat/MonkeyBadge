@@ -140,12 +140,14 @@ class OTA:
             print('OTA json must include "firmware", "sha" and "length" keys.')
             raise err
 
+
 # Convenience functions which use the OTA class to perform OTA updates.
 def from_file(
     url: str, sha="", length=0, verify=True, verbose=True, reboot=True
 ) -> None:
     with OTA(verify, verbose, reboot) as ota_update:
         ota_update.from_firmware_file(url, sha, length)
+
 
 def from_json(url: str, verify=True, verbose=True, reboot=True):
     with OTA(verify, verbose, reboot) as ota_update:

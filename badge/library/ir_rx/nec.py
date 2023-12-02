@@ -10,6 +10,7 @@
 from utime import ticks_diff
 from library.ir_rx import IR_RX
 
+
 class NEC_ABC(IR_RX):
     def __init__(self, pin, extended, samsung, callback, *args):
         # Block lasts <= 80ms (extended mode) and has 68 edges
@@ -37,18 +38,22 @@ class NEC_ABC(IR_RX):
                     val >>= 1
                     if ticks_diff(self._times[edge + 1], self._times[edge]) > 1120:
                         val |= 0x80000000
-            elif width > 1700: # 2.5ms space for a repeat code. Should have exactly 4 edges.
-                raise RuntimeError(self.REPEAT if self.edge == 4 else self.BADREP)  # Treat REPEAT as error.
+            elif (
+                width > 1700
+            ):  # 2.5ms space for a repeat code. Should have exactly 4 edges.
+                raise RuntimeError(
+                    self.REPEAT if self.edge == 4 else self.BADREP
+                )  # Treat REPEAT as error.
             else:
                 raise RuntimeError(self.BADSTART)
-            addr = val & 0xff  # 8 bit addr
-            cmd = (val >> 16) & 0xff
-            if cmd != (val >> 24) ^ 0xff:
+            addr = val & 0xFF  # 8 bit addr
+            cmd = (val >> 16) & 0xFF
+            if cmd != (val >> 24) ^ 0xFF:
                 raise RuntimeError(self.BADDATA)
-            if addr != ((val >> 8) ^ 0xff) & 0xff:  # 8 bit addr doesn't match check
+            if addr != ((val >> 8) ^ 0xFF) & 0xFF:  # 8 bit addr doesn't match check
                 if not self._extended:
                     raise RuntimeError(self.BADADDR)
-                addr |= val & 0xff00  # pass assumed 16 bit address to callback
+                addr |= val & 0xFF00  # pass assumed 16 bit address to callback
             self._addr = addr
         except RuntimeError as e:
             cmd = e.args[0]
@@ -56,13 +61,16 @@ class NEC_ABC(IR_RX):
         # Set up for new data burst and run user callback
         self.do_callback(cmd, addr, 0, self.REPEAT)
 
+
 class NEC_8(NEC_ABC):
     def __init__(self, pin, callback, *args):
         super().__init__(pin, False, False, callback, *args)
 
+
 class NEC_16(NEC_ABC):
     def __init__(self, pin, callback, *args):
         super().__init__(pin, True, False, callback, *args)
+
 
 class SAMSUNG(NEC_ABC):
     def __init__(self, pin, callback, *args):

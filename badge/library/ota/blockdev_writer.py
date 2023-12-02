@@ -83,7 +83,8 @@ class BlockDevWriter:
     ):
         self.device = Blockdev(device)
         self.writer = io.BufferedWriter(
-            self.device, self.device.blocksize  # type: ignore
+            self.device,
+            self.device.blocksize,  # type: ignore
         )
         self._sha = hashlib.sha256()
         self.verify = verify
