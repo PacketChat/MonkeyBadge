@@ -104,7 +104,11 @@ class MonkeyBadge:
         OTARollback.cancel()
 
         # Battery meter initialization and configuration:
-        self.battery_meter = Meter(config.FULLY_CHARGED_ADC_VALUE, config.DEPLETED_ADC_VALUE, config.MAX_VOLTAGE)
+        self.battery_meter = Meter(
+            config.FULLY_CHARGED_ADC_VALUE,
+            config.DEPLETED_ADC_VALUE,
+            config.MAX_VOLTAGE,
+        )
         adc = ADC(config.ADC_PIN)
         adc.atten(ADC.ATTN_11DB)
 

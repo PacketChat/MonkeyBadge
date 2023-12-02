@@ -24,6 +24,7 @@ class MenuItem:
             return self.dynamic_text()
         return self.name
 
+
 class Menu:
     def __init__(self, items, title="Menu", parent=None):
         """
@@ -34,9 +35,7 @@ class Menu:
         :param title: Menu title
         :param parent: Parent menu
         """
-        self.items = [
-                MenuItem("Back", self._back)
-                ] + items if parent else items
+        self.items = [MenuItem("Back", self._back)] + items if parent else items
         self.selected = 0
         self.parent = parent
         self.title = title
