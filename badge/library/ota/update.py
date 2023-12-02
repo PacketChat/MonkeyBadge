@@ -115,6 +115,20 @@ class OTA:
         with open_url(url) as f:
             return self.from_stream(f, sha, length)
 
+    # Check the hash of the running partition.  If they match return True, else
+    # False.
+    # - sha: the sha256sum of the firmware file
+    # - length: the length (in bytes) to seek from the block device to hash
+    def check_self_sha(self, sha: str = "", length: int = 0) -> bool:
+        from library.ota.blockdev_writer import sha_file
+
+        b = BlockDevWriter(Partition(Partition.RUNNING), verbose=False)
+        b.device.end = length
+        if sha == sha_file(b.device, b.device.blocksize):
+            return True
+        else:
+            return False
+
     # Load a firmware file, the location of which is read from a json file
     # containing the url for the firmware file, the sha and length of the file.
     # - url: the name of a file or url containing the json.
@@ -131,6 +145,12 @@ class OTA:
             firmware: str = data["firmware"]
             sha: str = data["sha"]
             length: int = data["length"]
+            if self.check_self_sha(sha, length):
+                raise ValueError(
+                    "Remote firmware file is the same as the running firmware."
+                )
+            else:
+                print("Update SHA does not match running firmware.")
             if not any(firmware.startswith(s) for s in ("https:", "http:", "/")):
                 # If firmware filename is relative, append to base of url of json file
                 baseurl, *_ = url.rsplit("/", 1)
