@@ -671,14 +671,14 @@ class MonkeyBadge:
             # check whether we should move to intro mode
             if (
                 self.intro["complete"] == 0
-                and 'intro_completed' not in self._calls_queue
+                and "intro_completed" not in self._calls_queue
                 and self.intro["enabled"] == 1
                 and self.current_challenge == "intro"
             ):
                 self.deinitialize()
                 konami.main()
                 self.initialize_badge()
-                self._calls_queue['intro_completed'] = self.config_konami_win
+                self._calls_queue["intro_completed"] = self.config_konami_win
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
             self.infrared.refresh_sync()
