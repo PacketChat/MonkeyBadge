@@ -63,9 +63,7 @@ class LEDHandler:
         if self.current_show.locked():
             return False
         thread.stack_size(1024 * 8)
-        thread.start_new_thread(
-                self._lock_wrapped_t, [func] + list(args)
-        )
+        thread.start_new_thread(self._lock_wrapped_t, [func] + list(args))
         return True
 
     def _lock_wrapped_t(self, func, *args):
