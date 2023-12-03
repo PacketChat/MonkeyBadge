@@ -119,7 +119,7 @@ class MonkeyBadge:
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
         self.social_menu = Menu([], title="Social", parent=self.main_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
-
+        self.oled_brightness_menu = Menu([], title="OLED Brightness", parent=self.settings_menu)
         self.volume_menu = Menu([], title="Volume", parent=self.radio_menu)
         self.volume_menu.items.extend(
             [
@@ -205,7 +205,7 @@ class MonkeyBadge:
         self.settings_menu.items.extend(
             [
                 MenuItem("Battery Life", self.battery_check),
-                MenuItem("OLED Brightness", "pass"),
+                MenuItem("OLED Brightness", submenu=self.oled_brightness_menu),
                 MenuItem("LED Brightness", "pass"),
                 #        MenuItem("Volume", "pass"),
                 MenuItem("Debounce", "pass"),
@@ -228,6 +228,11 @@ class MonkeyBadge:
                 MenuItem("heartbeat", _lightshow("do_heartbeat")),
             ]
         )
+        self.oled_brightness_menu.items.extend([
+            MenuItem("Low", lambda: self.set_oled_contrast_mode('low')),
+            MenuItem("Medium", lambda: self.set_oled_contrast_mode('medium')),
+            MenuItem("High", lambda: self.set_oled_contrast_mode('high'))
+        ])
 
     @property
     def infrared_id(self):
@@ -342,6 +347,17 @@ class MonkeyBadge:
         # self.display.print_lines(["", "  Applying OTA", "     Update  "])
         self.show_timed_message("OTA Update")
         self.flash_badge(self.update_url)
+
+    def set_oled_contrast_mode(self, mode):
+        """
+        Sets the contrast of the OLED display based on the selected mode.
+
+        Parameters:
+        mode: Selected mode ('low', 'medium', 'high').
+        """
+        contrast_levels = {"low": 1, "medium": 80, "high": 200}
+
+        self.display.set_contrast(contrast_levels[mode])
 
     def reset_badge(self):
         # TODO: This needs to clear the badge in the api-server.
