@@ -444,15 +444,8 @@ class MonkeyBadge:
 
     def _right_butback(self):
         name = self.current_menu.items[self.current_menu.selected].name
-        if name == 'numeral':
-            self.show_timed_message(
-                [
-                    'dear goons',
-                    '',
-                    'noid said',
-                    'it was okay'
-                ]
-            )
+        if name == "numeral":
+            self.show_timed_message(["dear goons", "", "noid said", "it was okay"])
 
         self.toggle_mute()
 
