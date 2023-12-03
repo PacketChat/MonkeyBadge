@@ -1,9 +1,9 @@
+import _thread as thread
 import machine
-import neopixel
-import time
-import random
 import math
-import uasyncio as asyncio
+import neopixel
+import random
+import time
 
 # Utility Functions:
 def scale_color(rgb, brightness_factor):
@@ -53,16 +53,22 @@ class LEDHandler:
         Initialize the light show with a NeoPixel light. This is where you set the brightness level for the light show.
         """
         self.np_light = NeoPixelLight(18, 7, brightness=0.8)
-        self.led_task = asyncio.Task(lambda: ())
+        self.current_show = thread.allocate_lock()
 
-    async def led_run_async(self, func, args, kwargs):
-        func(*args, **kwargs)
-
-    def set_led_lights(self, lights_func, *args, **kwargs):
+    def set_led_lights(self, lights_func, *args):
         func = getattr(self, lights_func)
-        self.led_task = asyncio.create_task(
-                self.led_run_async(func, args, kwargs)
+        if self.current_show.locked():
+            return False
+        thread.stack_size(1024 * 8)
+        thread.start_new_thread(
+                self._lock_wrapped_t, [func] + list(args)
         )
+        return True
+
+    def _lock_wrapped_t(self, func, *args):
+        self.current_show.acquire()
+        func(*args)
+        self.current_show.release()
 
     def do_all_off(self):
         """Turn off all LEDs."""
