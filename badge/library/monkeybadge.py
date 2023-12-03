@@ -443,6 +443,17 @@ class MonkeyBadge:
         self.select_button()
 
     def _right_butback(self):
+        name = self.current_menu.items[self.current_menu.selected].name
+        if name == 'numeral':
+            self.show_timed_message(
+                [
+                    'dear goons',
+                    '',
+                    'noid said',
+                    'it was okay'
+                ]
+            )
+
         self.toggle_mute()
 
     def select_button(self):
@@ -454,11 +465,9 @@ class MonkeyBadge:
     def toggle_mute(self):
         if self.radio.muted:
             self.radio.unmute()
-            self.show_timed_message("Unmuted")
             self.display.set_muted(False)
         else:
             self.radio.mute()
-            self.show_timed_message("Muted")
             self.display.set_muted(True)
 
     def _update_display(self, menu_index=0):
