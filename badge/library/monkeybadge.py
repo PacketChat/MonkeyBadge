@@ -149,6 +149,7 @@ class MonkeyBadge:
                     self.display_menu(
                         "Credits",
                         "temtel",
+                        "temsgurl",
                         "crackerjack",
                         "thephreak",
                         "faxanadu",
@@ -182,6 +183,12 @@ class MonkeyBadge:
                         "you are",
                         "having with",
                         "the code",
+                    ),
+                ),
+                MenuItem(
+                    "Sponsors",
+                    self.display_menu(
+                        "Sponsors", "The Paranoids", "Atredis", "Nolacon", "Playtronics"
                     ),
                 ),
                 MenuItem("Log", self.select_log),
