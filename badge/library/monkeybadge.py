@@ -40,7 +40,7 @@ class MonkeyBadge:
 
         # anything in the calls queue should return true on success and false
         # on failure
-        self._calls_queue = list()
+        self._calls_queue = dict()
         # radio init
         self.radio = SI470X()
         self.radio.setVolume(1)
@@ -446,6 +446,10 @@ class MonkeyBadge:
         self.select_button()
 
     def _right_butback(self):
+        name = self.current_menu.items[self.current_menu.selected].name
+        if name == "numeral":
+            self.show_timed_message(["dear goons", "", "noid said", "it was okay"])
+
         self.toggle_mute()
 
     def select_button(self):
@@ -457,11 +461,9 @@ class MonkeyBadge:
     def toggle_mute(self):
         if self.radio.muted:
             self.radio.unmute()
-            self.show_timed_message("Unmuted")
             self.display.set_muted(False)
         else:
             self.radio.mute()
-            self.show_timed_message("Muted")
             self.display.set_muted(True)
 
     def _update_display(self, menu_index=0):
@@ -537,6 +539,7 @@ class MonkeyBadge:
             self.apitoken = r["token"]
             self.db.set("token", self.apitoken)
             self.save_gamestate(r)
+            self.load_gamestate()
         else:
             print("registration failed")
 
@@ -552,8 +555,9 @@ class MonkeyBadge:
         print(f"friend request with {irid}")
         if r:
             self.save_gamestate(r)
-        else:
-            print(f"friend request failed: {r}")
+            return True
+        print(f"friend request failed: {r}")
+        return False
 
     @if_wifi
     def config_konami_win(self):
@@ -606,7 +610,10 @@ class MonkeyBadge:
                     self.log = f"PAIR: {sender}"
                     self.show_timed_message(f"PREQ {sender}")
                     self.infrared.send_resp_pair(sender)
-                    self.friendrequest(sender)
+                    self._calls_queue[f"friendrequest_{sender}"] = (
+                        self.friendrequest,
+                        [sender],
+                    )
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
@@ -640,12 +647,10 @@ class MonkeyBadge:
         while True:
             now = time.ticks_ms()
 
-            current_calls = self._calls_queue[:]
-            self._calls_queue = list()
-            for call in current_calls:
-                success = call()
-                if not success:
-                    self._calls_queue.append(call)
+            for name, (func, args) in self._calls_queue.items():
+                success = func(*args)
+                if success:
+                    del self._calls_queue[name]
 
             # the badge is waiting to execute the next call
             print(".", end="")
@@ -675,15 +680,16 @@ class MonkeyBadge:
             # check whether we should move to intro mode
             if (
                 self.intro["complete"] == 0
-                and self.config_konami_win not in self._calls_queue
+                and "intro_completed" not in self._calls_queue
                 and self.intro["enabled"] == 1
                 and self.current_challenge == "intro"
             ):
                 self.deinitialize()
                 konami.main()
                 self.initialize_badge()
-                self._calls_queue.append(self.config_konami_win)
+                self._calls_queue["intro_completed"] = (self.config_konami_win, [])
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
+            self.infrared.refresh_sync()
 
             time.sleep(2)
