@@ -119,7 +119,9 @@ class MonkeyBadge:
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
         self.social_menu = Menu([], title="Social", parent=self.main_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
-        self.oled_brightness_menu = Menu([], title="OLED Brightness", parent=self.settings_menu)
+        self.oled_brightness_menu = Menu(
+            [], title="OLED Brightness", parent=self.settings_menu
+        )
         self.volume_menu = Menu([], title="Volume", parent=self.radio_menu)
         self.volume_menu.items.extend(
             [
@@ -228,11 +230,13 @@ class MonkeyBadge:
                 MenuItem("heartbeat", _lightshow("do_heartbeat")),
             ]
         )
-        self.oled_brightness_menu.items.extend([
-            MenuItem("Low", lambda: self.set_oled_contrast_mode('low')),
-            MenuItem("Medium", lambda: self.set_oled_contrast_mode('medium')),
-            MenuItem("High", lambda: self.set_oled_contrast_mode('high'))
-        ])
+        self.oled_brightness_menu.items.extend(
+            [
+                MenuItem("Low", lambda: self.set_oled_contrast_mode("low")),
+                MenuItem("Medium", lambda: self.set_oled_contrast_mode("medium")),
+                MenuItem("High", lambda: self.set_oled_contrast_mode("high")),
+            ]
+        )
 
     @property
     def infrared_id(self):
