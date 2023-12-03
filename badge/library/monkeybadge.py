@@ -40,7 +40,7 @@ class MonkeyBadge:
 
         # anything in the calls queue should return true on success and false
         # on failure
-        self._calls_queue = list()
+        self._calls_queue = dict()
         # radio init
         self.radio = SI470X()
         self.radio.setVolume(1)
@@ -534,6 +534,7 @@ class MonkeyBadge:
             self.apitoken = r["token"]
             self.db.set("token", self.apitoken)
             self.save_gamestate(r)
+            self.load_gamestate()
         else:
             print("registration failed")
 
@@ -637,12 +638,10 @@ class MonkeyBadge:
         while True:
             now = time.ticks_ms()
 
-            current_calls = self._calls_queue[:]
-            self._calls_queue = list()
-            for call in current_calls:
-                success = call()
-                if not success:
-                    self._calls_queue.append(call)
+            for name, func in self._calls_queue.items():
+                success = func()
+                if success:
+                    del self._calls_queue[name]
 
             # the badge is waiting to execute the next call
             print(".", end="")
@@ -672,15 +671,16 @@ class MonkeyBadge:
             # check whether we should move to intro mode
             if (
                 self.intro["complete"] == 0
-                and self.config_konami_win not in self._calls_queue
+                and 'intro_completed' not in self._calls_queue
                 and self.intro["enabled"] == 1
                 and self.current_challenge == "intro"
             ):
                 self.deinitialize()
                 konami.main()
                 self.initialize_badge()
-                self._calls_queue.append(self.config_konami_win)
+                self._calls_queue['intro_completed'] = self.config_konami_win
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
+            self.infrared.refresh_sync()
 
             time.sleep(2)

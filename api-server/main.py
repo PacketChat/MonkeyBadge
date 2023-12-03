@@ -256,6 +256,9 @@ async def register(r: Register):
 
         j = json.loads(templateJSON)
 
+        if check_intro_started():
+            j["intro"]["enabled"] = 1
+
         # get a new IRID
         irid = ""
         while True:

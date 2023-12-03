@@ -167,6 +167,10 @@ class IR:
         self.enabled = True
         self.rx = NECRx(Pin(config.IR_RX_PIN), self.__schedule_recv_sync)
 
+    def refresh_sync(self):
+        if self.enabled:
+            self.rx = NECRx(Pin(config.IR_RX_PIN), self.__schedule_recv_sync)
+
     def disable(self):
         """Disable IR Recv"""
         self.enabled = False
