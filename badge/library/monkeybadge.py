@@ -2,6 +2,8 @@ from machine import ADC
 import micropython
 import network
 import time
+import _thread
+
 
 import ujson as json
 
@@ -15,6 +17,7 @@ from library.battery import Meter
 from library.leds import LEDHandler
 from library.menu import Menu, MenuItem
 from library.radio import SI470X
+from library.cli import CLI
 import library.wifi as wifi
 
 from library.ota.update import OTA as OTAUpdate
@@ -37,6 +40,7 @@ class MonkeyBadge:
         :param uuid: The UUID of the badge
         """
         # Wifi Init
+        self.version = __version__
         self.wlan = network.WLAN(network.STA_IF)
         self.enable_wifi()
 
@@ -811,6 +815,11 @@ class MonkeyBadge:
     def run(self):
         # self.leds.set_led_lights('do_boot_sequence')
         self.initialize_badge()
+
+        # start the cli
+        cli = CLI(self)
+        _thread.start_new_thread(cli.run, ())
+
         # main controller
         while True:
             now = time.ticks_ms()

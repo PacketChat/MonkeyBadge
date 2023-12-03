@@ -86,6 +86,18 @@ class GameClient:
 
         return None
 
+    def change_handle(self, token, uuid, name):
+        request_url = self.baseurl + "/changehandle"
+
+        request_body = {"myUUID": uuid, "handle": name}
+
+        r = self.secure_api_request(request_url, token, request_body)
+
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return None
+
     def friendrequest(self, token, uuid, IRID):
         request_url = self.baseurl + "/friendrequest"
         request_body = {"myUUID": uuid, "remoteIRID": str(IRID)}
