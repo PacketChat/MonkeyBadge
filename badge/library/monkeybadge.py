@@ -208,9 +208,6 @@ class MonkeyBadge:
             [
                 MenuItem("Battery Life", self.battery_check),
                 MenuItem("OLED Brightness", submenu=self.oled_brightness_menu),
-                MenuItem("LED Brightness", "pass"),
-                #        MenuItem("Volume", "pass"),
-                MenuItem("Debounce", "pass"),
                 MenuItem("OTA Update", self.update_badge),
                 MenuItem("Reset Badge", self.reset_badge),
             ]
