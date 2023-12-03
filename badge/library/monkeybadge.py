@@ -188,11 +188,7 @@ class MonkeyBadge:
                 MenuItem(
                     "Sponsors",
                     self.display_menu(
-                        "Sponsors",
-                        "The Paranoids",
-                        "Atredis",
-                        "Nolacon",
-                        "Playtronics"
+                        "Sponsors", "The Paranoids", "Atredis", "Nolacon", "Playtronics"
                     ),
                 ),
                 MenuItem("Log", self.select_log),
