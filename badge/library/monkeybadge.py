@@ -355,11 +355,7 @@ class MonkeyBadge:
         Parameters:
         mode: Selected mode ('low', 'medium', 'high').
         """
-        contrast_levels = {
-            'low': 1,
-            'medium': 80,
-            'high': 200
-        }
+        contrast_levels = { 'low': 1, 'medium': 80, 'high': 200 }
 
         self.display.set_contrast(contrast_levels[mode])
 
