@@ -216,10 +216,9 @@ class MonkeyBadge:
             ]
         )
 
-        def _lightshow(name, *args, **kwargs):
+        def _lightshow(name, *args):
             def _f():
-                self.leds.set_led_lights(name, *args, **kwargs)
-                return self.current_menu
+                self.leds.set_led_lights(name, *args)
 
             return _f
 
