@@ -552,8 +552,9 @@ class MonkeyBadge:
         print(f"friend request with {irid}")
         if r:
             self.save_gamestate(r)
-        else:
-            print(f"friend request failed: {r}")
+            return True
+        print(f"friend request failed: {r}")
+        return False
 
     @if_wifi
     def config_konami_win(self):
@@ -606,7 +607,10 @@ class MonkeyBadge:
                     self.log = f"PAIR: {sender}"
                     self.show_timed_message(f"PREQ {sender}")
                     self.infrared.send_resp_pair(sender)
-                    self.friendrequest(sender)
+                    self._calls_queue[f"friendrequest_{sender}"] = (
+                        self.friendrequest,
+                        [sender],
+                    )
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
@@ -640,8 +644,8 @@ class MonkeyBadge:
         while True:
             now = time.ticks_ms()
 
-            for name, func in self._calls_queue.items():
-                success = func()
+            for name, (func, args) in self._calls_queue.items():
+                success = func(*args)
                 if success:
                     del self._calls_queue[name]
 
@@ -680,7 +684,7 @@ class MonkeyBadge:
                 self.deinitialize()
                 konami.main()
                 self.initialize_badge()
-                self._calls_queue["intro_completed"] = self.config_konami_win
+                self._calls_queue["intro_completed"] = (self.config_konami_win, [])
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
             self.infrared.refresh_sync()
