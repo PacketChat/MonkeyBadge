@@ -76,6 +76,9 @@ class DisplayHandler:
         self.i2c = SoftI2C(sda=Pin(sda_pin), scl=Pin(scl_pin))
         self.display = ssd1306.SSD1306_I2C(width, height, self.i2c)
 
+        # Lower the brightness:
+        self.display.contrast(1)
+
         # self.timed_message = framebuf.FrameBuffer(
         #    bytearray(930), 124, 60, framebuf.MONO_HLSB
         # )
@@ -273,3 +276,12 @@ class DisplayHandler:
         self.display.show()
         self.showing_timed = True
         self.timed_expiration = now + show_time
+
+    def set_contrast(self, mode):
+        """
+        Set the contrast of the display.
+
+        :param mode: low, medium or high.
+        """
+        self.display.contrast(mode)
+        print(f"Set the contrast to: {mode}")

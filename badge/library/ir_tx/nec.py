@@ -6,16 +6,19 @@
 
 # With thanks to J.E. Tannenbaum for information re Samsung protocol
 from micropython import const
-from library.ir_tx import IR, STOP
+from library.ir_tx import IR
 
 _TBURST = const(563)
 _T_ONE = const(1687)
 
+
 class NEC(IR):
-    valid = (0xffff, 0xff, 0)  # Max addr, data, toggle
+    valid = (0xFFFF, 0xFF, 0)  # Max addr, data, toggle
     samsung = False
 
-    def __init__(self, pin, freq=38000, verbose=False):  # NEC specifies 38KHz also Samsung
+    def __init__(
+        self, pin, freq=38000, verbose=False
+    ):  # NEC specifies 38KHz also Samsung
         super().__init__(pin, freq, 68, 33, verbose)  # Measured duty ratio 33%
 
     def _bit(self, b):
@@ -28,13 +31,13 @@ class NEC(IR):
             self.append(9000, 4500)
         if addr < 256:  # Short address: append complement
             if self.samsung:
-              addr |= addr << 8
+                addr |= addr << 8
             else:
-              addr |= ((addr ^ 0xff) << 8)
+                addr |= (addr ^ 0xFF) << 8
         for _ in range(16):
             self._bit(addr & 1)
             addr >>= 1
-        data |= ((data ^ 0xff) << 8)
+        data |= (data ^ 0xFF) << 8
         for _ in range(16):
             self._bit(data & 1)
             data >>= 1

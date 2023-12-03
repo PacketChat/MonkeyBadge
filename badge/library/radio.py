@@ -186,13 +186,13 @@ class SI470X(object):
         if c < 1:
             print("Countdown expired.")
 
-
     def getStatus(self):
-        # This is just a little funkiness to try and squeeze most of this onto 
+        # This is just a little funkiness to try and squeeze most of this onto
         # a single screen.  Basically we bind "self.fields" to a shorter
         # variable name solely within the scope of the function.
 
         sf = self.fields
+        # fmt: off
         print(
 "   DEVICEID PN      : (0x{:0x}".format(sf.DEVICEID.PN) + f") \t{sf.DEVICEID.PN}\n" +
 "   DEVICEID MFGID   : (0x{:0x}".format(sf.DEVICEID.MFGID) + f") \t{sf.DEVICEID.MFGID}\n" +
@@ -229,6 +229,7 @@ class SI470X(object):
 " SYSCONFIG3 SKSNR   : (0x{:0x}".format(sf.SYSCONFIG3.SKSNR) + f") \t{sf.SYSCONFIG3.SKSNR}\n" +
 " SYSCONFIG3 SKCNT   : (0x{:0x}".format(sf.SYSCONFIG3.SKCNT) + f") \t{sf.SYSCONFIG3.SKCNT}\n")
 
+    # fmt: on
 
     def setRegion(self):
         self.fields.SYSCONFIG2.BAND = self.band
@@ -282,7 +283,7 @@ class SI470X(object):
         self.getRegs()
         self.fields.TEST1.AHIZEN = 1
         self.setRegs()
-        
+
         self.getRegs()
         self.fields.SYSCONFIG1.GPIO1 = 2
         self.fields.SYSCONFIG1.GPIO2 = 2
@@ -342,7 +343,9 @@ class SI470X(object):
 
         # Determine the valid frequency range and spacing based on the
         # selected band:
-        band_range = [(87.5, 107.0), (76.0, 108.0), (76.0, 90.0)][self.fields.SYSCONFIG2.BAND]
+        band_range = [(87.5, 107.0), (76.0, 108.0), (76.0, 90.0)][
+            self.fields.SYSCONFIG2.BAND
+        ]
         spacing = [0.2, 0.1, 0.05][self.fields.SYSCONFIG2.SPACE]
 
         # Calculate the channel number based on the frequency and spacing:
@@ -490,10 +493,10 @@ class SI470X(object):
         frequency *= 2
 
         # convert to our band and MHZ
-        result = (87.5 + frequency * 0.1)
+        result = 87.5 + frequency * 0.1
 
         return f"{result}"
-    
+
     def seekUp(self):
         """
         Initiate the seeking upwards operation.
@@ -550,7 +553,7 @@ class SI470X(object):
     def mute(self):
         self.setVolume(0)
         self.muted = True
-    
+
     def unmute(self):
         self.setVolume(5)
         self.muted = False

@@ -2,7 +2,6 @@
 from machine import Pin
 import micropython
 import time
-import uasyncio as asyncio
 
 import config
 from library.ir_rx.nec import NEC_16 as NECRx

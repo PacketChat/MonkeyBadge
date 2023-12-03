@@ -1,3 +1,4 @@
+from machine import ADC
 import micropython
 import network
 import time
@@ -10,6 +11,7 @@ from library.button import ButtonHandler
 from library.db import dbtree
 from library.display import DisplayHandler
 from library.gameclient import GameClient
+from library.battery import Meter
 from library.leds import LEDHandler
 from library.menu import Menu, MenuItem
 from library.radio import SI470X
@@ -45,7 +47,7 @@ class MonkeyBadge:
 
         self.db = dbtree()
 
-        self.gameclient = GameClient()
+        self.gameclient = GameClient(__version__)
         self.last_checkin = -60000
 
         # Display Init
@@ -73,6 +75,7 @@ class MonkeyBadge:
         # boot
         print("Badge Booting")
         self.display.print_logo()
+        time.sleep(1)  # I want to see the logo
 
         # TODO possibly set this as a property of the game client
         self.registration_key = config.REG_KEY
@@ -100,6 +103,15 @@ class MonkeyBadge:
         print("Confirming firmware boot success. Cancelling OTA Rollback")
         OTARollback.cancel()
 
+        # Battery meter initialization and configuration:
+        self.battery_meter = Meter(
+            config.FULLY_CHARGED_ADC_VALUE,
+            config.DEPLETED_ADC_VALUE,
+            config.MAX_VOLTAGE,
+        )
+        adc = ADC(config.ADC_PIN)
+        adc.atten(ADC.ATTN_11DB)
+
         # Menu Definitions
         self.main_menu = Menu([], title="Main")
         self.radio_menu = Menu([], title="Radio", parent=self.main_menu)
@@ -107,7 +119,7 @@ class MonkeyBadge:
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
         self.social_menu = Menu([], title="Social", parent=self.main_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
-
+        self.oled_brightness_menu = Menu([], title="OLED Brightness", parent=self.settings_menu)
         self.volume_menu = Menu([], title="Volume", parent=self.radio_menu)
         self.volume_menu.items.extend(
             [
@@ -129,7 +141,7 @@ class MonkeyBadge:
         self.about_menu.items.extend(
             [
                 MenuItem("Version", self.display_menu("Version", __version__)),
-                MenuItem("Chllnge Status", submenu=self.challenge_menu),
+                MenuItem("Game Status", submenu=self.challenge_menu),
                 MenuItem(
                     "Credits",
                     self.display_menu(
@@ -177,6 +189,9 @@ class MonkeyBadge:
             [
                 MenuItem("Find Badges", self.find_badges),
                 MenuItem("Seen Badges", self.seen_badges_action),
+                MenuItem("Match Send", self.initiate_pair),
+                MenuItem("Match Recv", self.pairing_mode),
+                MenuItem("Friends List", self.display_friends),
             ]
         )
         self.radio_menu.items.extend(
@@ -189,7 +204,8 @@ class MonkeyBadge:
         )
         self.settings_menu.items.extend(
             [
-                MenuItem("OLED Brightness", "pass"),
+                MenuItem("Battery Life", self.battery_check),
+                MenuItem("OLED Brightness", submenu=self.oled_brightness_menu),
                 MenuItem("LED Brightness", "pass"),
                 #        MenuItem("Volume", "pass"),
                 MenuItem("Debounce", "pass"),
@@ -211,6 +227,11 @@ class MonkeyBadge:
                 MenuItem("heartbeat", _lightshow("do_heartbeat")),
             ]
         )
+        self.oled_brightness_menu.items.extend([
+            MenuItem("Low", lambda: self.set_oled_contrast_mode('low')),
+            MenuItem("Medium", lambda: self.set_oled_contrast_mode('medium')),
+            MenuItem("High", lambda: self.set_oled_contrast_mode('high'))
+        ])
 
     @property
     def infrared_id(self):
@@ -316,11 +337,26 @@ class MonkeyBadge:
     #            else:
     #                print("Unable to flash device %s" % (err))
 
+    def battery_check(self):
+        reading = self.battery_meter.info()
+        self.show_timed_message(reading)
+
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
         # self.display.print_lines(["", "  Applying OTA", "     Update  "])
         self.show_timed_message("OTA Update")
         self.flash_badge(self.update_url)
+
+    def set_oled_contrast_mode(self, mode):
+        """
+        Sets the contrast of the OLED display based on the selected mode.
+
+        Parameters:
+        mode: Selected mode ('low', 'medium', 'high').
+        """
+        contrast_levels = {"low": 1, "medium": 80, "high": 200}
+
+        self.display.set_contrast(contrast_levels[mode])
 
     def reset_badge(self):
         # TODO: This needs to clear the badge in the api-server.
@@ -367,7 +403,7 @@ class MonkeyBadge:
     def pairing_mode(self):
         self.infrared.pairing_mode = True
         self.infrared.end_pairing_mode = time.ticks_ms() + 10000
-        self.show_timed_message("Pairing Mode", 10000)
+        self.show_timed_message(["Waiting for", "new friends"], 10000)
 
     def display_friends(self):
         print(self.friends)
@@ -458,7 +494,7 @@ class MonkeyBadge:
             j = json.loads(state)
 
         if j:
-            print("loaded gamestate {}".format(self.infrared_id))
+            print(f"loaded gamestate. irid: {self.infrared_id}")
             self.handle = j["badgeHandle"]
             self.apitoken = j["token"]
             self.infrared_id = j["IR_ID"]
@@ -503,6 +539,15 @@ class MonkeyBadge:
                 del self.seen_badges[badge]
 
     @if_wifi
+    def friendrequest(self, irid):
+        r = self.gameclient.friendrequest(self.apitoken, self.badge_uuid, irid)
+        print(f"friend request with {irid}")
+        if r:
+            self.save_gamestate(r)
+        else:
+            print(f"friend request failed: {r}")
+
+    @if_wifi
     def config_konami_win(self):
         """We've completed the intro challenge"""
         j = self.gameclient.konami_complete(self.apitoken, self.badge_uuid)
@@ -539,17 +584,21 @@ class MonkeyBadge:
             while self.infrared.msgs:
                 opcode, sender, extra = self.infrared.msgs.pop()
                 if opcode == "DISCOVER":
+                    print(f"DISCOVER pair: {sender}")
                     self.log = f"DISC: {sender}"
                     self.infrared.send_here()
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "HERE":
+                    print(f"HERE pair: {sender}")
                     self.log = f"HERE: {sender}"
                     self.show_timed_message(f"HERE {sender}")
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "INIT_PAIR":
+                    print(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
                     self.show_timed_message(f"PREQ {sender}")
                     self.infrared.send_resp_pair(sender)
+                    self.friendrequest(sender)
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
@@ -605,7 +654,7 @@ class MonkeyBadge:
                     print(".")
                     self.checkin()
                     self.last_checkin = now
-                except Exception as err:
+                except Exception:
                     pass
 
             # update ir status
