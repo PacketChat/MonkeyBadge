@@ -39,9 +39,18 @@ class MonkeyBadge:
         # Wifi Init
         self.wlan = network.WLAN(network.STA_IF)
 
+        # Setup button handler
+        self.button_handler = ButtonHandler(
+            self._left_up_butback,
+            self._left_down_butback,
+            self._center_butback,
+            self._right_butback,
+        )
+
         # anything in the calls queue should return true on success and false
         # on failure
         self._calls_queue = dict()
+
         # radio init
         self.radio = SI470X()
         self.radio.setVolume(1)
@@ -405,7 +414,7 @@ class MonkeyBadge:
                 "",
                 f'Cans: {self.challenge3["interact_cans"]}',
                 f'Mic: {self.challenge3["interact_mic"]}',
-                f'Shade: {self.challenge3["interact_shade"]}',
+                f'Shade: {self.challenge3["interact_shades"]}',
             ]
 
         self.show_timed_message(msgs)
@@ -511,6 +520,7 @@ class MonkeyBadge:
         except Exception:
             print("Unable to load saved state: not found.")
             current_state = ""
+
         # print(f"Current State {type(current_state)}: {current_state}")
         # print(f"New State {type(state)}: {state}")
 
@@ -543,8 +553,37 @@ class MonkeyBadge:
                     MenuItem("Intro Complete", self.donothing)
                 )
             self.intro = j["intro"]
-            if not self.infrared.pairing and self.intro["complete"]:
-                self.infrared.enable_pairing()
+
+            # if the player completed challenge 1, tell them, and do any needful
+            if self.current_challenge != j["current_challenge"]:
+                if j["current_challenge"] == "challenge1":
+                    self.show_timed_message([" Intro", "  Complete!"])
+
+                if j["current_challenge"] == "challenge2":
+                    self.show_timed_message(
+                        [
+                            "CH1 Complete!",
+                            "  Stay tuned",
+                            "    for an",
+                            "   important",
+                            "   message",
+                        ],
+                        10,
+                    )
+                if j["current_challenge"] == "challenge3":
+                    self.show_timed_message([" Challenge 2", "  Complete!"])
+                    self.lock_radio_station = False
+
+                if j["current_challenge"] == "winner":
+                    self.show_timed_message(
+                        [
+                            "",
+                            "WINNER!",
+                            "   WINNER!",
+                            "       WINNER!",
+                        ]
+                    )
+
             self.challenge1 = j["challenge1"]
             self.challenge2 = j["challenge2"]
             self.challenge3 = j["challenge3"]
@@ -610,6 +649,7 @@ class MonkeyBadge:
                 self.save_gamestate(r)
                 self.load_gamestate(r)
                 print("Badge successfully checked in")
+
             else:
                 print("Badge checkin failed")
         # time.sleep_ms(config.CHECKIN_PERIOD * 1000)
@@ -646,13 +686,7 @@ class MonkeyBadge:
         """Do the whole setup thing dawg"""
         self.load_gamestate()
 
-        # Setup button handler
-        self.button_handler = ButtonHandler(
-            self._left_up_butback,
-            self._left_down_butback,
-            self._center_butback,
-            self._right_butback,
-        )
+        self.button_handler.enable_buttons()
 
         # always boot up to the main menu.
         self.current_menu = self.main_menu
@@ -715,6 +749,7 @@ class MonkeyBadge:
                 konami.main()
                 self.initialize_badge()
                 self._calls_queue["intro_completed"] = (self.config_konami_win, [])
+
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
             self.infrared.refresh_sync()

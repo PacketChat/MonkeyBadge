@@ -22,11 +22,7 @@ templateJSON = """
     },
     "challenge2": {
         "complete": 0,
-        "interact_uber1": "",
-        "interact_uber2": "",
-        "interact_uber3": "",
-        "interact_uber4": "",
-        "interact_uber5": ""
+        "status": [0,0,0,0,0]
     },
     "challenge3": {
         "complete": 0,
@@ -81,7 +77,7 @@ async def main():
     j["badgeHandle"] = handle  # create random handle
     j["token"] = TESTAPIKEY
     j["intro"]["complete"] = 1
-    await client.json.set(f"{uuid}", ".", j)
+    await client.json.set(f"badge1", ".", j)
     await create_api_key(client, uuid, TESTAPIKEY)
 
     # Intro and Challenge 1
@@ -93,7 +89,7 @@ async def main():
     j["token"] = TESTAPIKEY
     j["intro"]["complete"] = 1
     j["challenge1"]["complete"] = 1
-    await client.json.set(f"{uuid}", ".", j)
+    await client.json.set(f"badge2", ".", j)
     await create_api_key(client, uuid, TESTAPIKEY)
 
     # Intro and Challenge 1 and Challenge 2
@@ -107,7 +103,7 @@ async def main():
     j["challenge1"]["complete"] = 1
     j["challenge2"]["complete"] = 1
     j["challenge1"]["matches"] = ["1", "2", "3", "4", "5"]
-    await client.json.set(f"{uuid}", ".", j)
+    await client.json.set(f"badge3", ".", j)
     await create_api_key(client, uuid, TESTAPIKEY)
 
     # Intro and Challenge 1 and Challenge 2 and matches
@@ -121,7 +117,7 @@ async def main():
     j["challenge1"]["complete"] = 1
     j["challenge2"]["complete"] = 1
     j["challenge1"]["matches"] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-    await client.json.set(f"{uuid}", ".", j)
+    await client.json.set(f"badge4", ".", j)
     await create_api_key(client, uuid, TESTAPIKEY)
 
     uuid = uuid4()
@@ -147,7 +143,7 @@ async def main():
         "10",
         "11",
     ]
-    await client.json.set(f"{uuid}", ".", j)
+    await client.json.set(f"badge5", ".", j)
     await create_api_key(client, uuid, TESTAPIKEY)
 
 

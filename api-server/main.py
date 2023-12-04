@@ -17,15 +17,15 @@ redisport = os.environ.get("MB_REDIS_PORT", "6379")
 
 registration_key = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
 
-uber1uuid = "bb4a84dc-cf4b-4d04-84fd-1c1cc8799e0d"
-uber2uuid = "4ec2d946-05fa-4f34-a033-278a6d1ac222"
-uber3uuid = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
-uber4uuid = "0bd0d58f-fb52-4859-9bd2-435f0af39e62"
-uber5uuid = "a4860c69-4e4d-4c30-bf30-9f7c982df55d"
+uber1uuid = 12341
+uber2uuid = 42342
+uber3uuid = 52321
+uber4uuid = 65001
+uber5uuid = 38913
 
-cansuuid = "c71ec72e-c063-48c0-a3f9-ce5af406445f"
-micuuid = "7f19e4b1-b6b2-49be-8b27-6061fdaf5ef0"
-shadesuuid = "aa0b8824-53d0-4c46-8c08-ad75baf9d1d5"
+cansuuid = 37634
+micuuid = 31583
+shadesuuid = 51799
 
 
 templateJSON = """
@@ -44,17 +44,13 @@ templateJSON = """
     },
     "challenge2": {
         "complete": 0,
-        "interact_uber1": "",
-        "interact_uber2": "",
-        "interact_uber3": "",
-        "interact_uber4": "",
-        "interact_uber5": ""
+        "status": [0,0,0,0,0]
     },
     "challenge3": {
         "complete": 0,
-        "interact_cans": "",
-        "interact_mic": "",
-        "interact_shades": ""
+        "interact_cans": 0,
+        "interact_mic": 0,
+        "interact_shades": 0
     },
     "antisocial_monkey_club": 0,
     "battles": {
@@ -95,6 +91,11 @@ class Register(BaseModel):
     myUUID: str
     key: str
     handle: str
+
+
+class UUID_ObjectID(BaseModel):
+    myUUID: str
+    objectid: int
 
 
 class UUID_IRID(BaseModel):
@@ -372,7 +373,7 @@ async def deletebadge(r: Register, api_key: str = Security(get_api_key)):
 
 
 @app.post("/hiddenobject")
-async def hiddenobject(r: UUID_IRID, api_key: str = Security(get_api_key)):
+async def hiddenobject(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
     j = await client.json.get(r.myUUID)
 
     if not j:
@@ -382,11 +383,34 @@ async def hiddenobject(r: UUID_IRID, api_key: str = Security(get_api_key)):
         if not j["token"] == api_key:
             raise HTTPException(status_code=404, detail="Badge not found")
 
+        if r.objectid:
+            if r.objectid == uber1uuid:
+                j["challenge2"]["status"][0] = 1
+            elif r.objectid == uber2uuid:
+                j["challenge2"]["status"][1] = 1
+            elif r.objectid == uber3uuid:
+                j["challenge2"]["status"][2] = 1
+            elif r.objectid == uber4uuid:
+                j["challenge2"]["status"][3] = 1
+            elif r.objectid == uber5uuid:
+                j["challenge2"]["status"][4] = 1
+            else:
+                raise HTTPException(status_code=404, detail="Object not found")
+
+        # is challenge 2 complete?
+        if j["current_challenge"] == "challenge2":
+            if j["challenge2"]["status"] == [1, 1, 1, 1, 1]:
+                j["challenge2"]["complete"] = 1
+                j["current_challenge"] = "challenge3"
+        else:
+            raise HTTPException(status_code=400, detail="Challenge not started")
+
+    await client.json.set(r.myUUID, ".", j)
     return j
 
 
 @app.post("/monkeysee")
-async def monkeysee(r: UUID_IRID, api_key: str = Security(get_api_key)):
+async def monkeysee(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
     j = await client.json.get(r.myUUID)
 
     if not j:
@@ -396,6 +420,28 @@ async def monkeysee(r: UUID_IRID, api_key: str = Security(get_api_key)):
         if not j["token"] == api_key:
             raise HTTPException(status_code=404, detail="Badge not found")
 
+        if r.objectid:
+            if r.objectid == cansuuid:
+                j["challenge3"]["interact_cans"] = 1
+            elif r.objectid == micuuid:
+                j["challenge3"]["interact_mic"] = 1
+            elif r.objectid == shadesuuid:
+                j["challenge3"]["interact_shades"] = 1
+            else:
+                raise HTTPException(status_code=404, detail="Unknown Monkey")
+
+        # is challenge 3 complete?
+        if j["current_challenge"] == "challenge3":
+            # have I seen all the monkeys?
+            if (
+                j["challenge3"]["interact_cans"] == 1
+                and j["challenge3"]["interact_mic"] == 1
+                and j["challenge3"]["interact_shades"] == 1
+            ):
+                j["challenge3"]["complete"] = 1
+                j["current_challenge"] = "winner"
+
+    await client.json.set(r.myUUID, ".", j)
     return j
 
 
@@ -446,6 +492,13 @@ async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
                         myjson["challenge1"]["matches"].append(
                             f"{remote_json['badgeHandle']}:{remote_uuid}"
                         )
+                        # is Challenge 1 complete? if so, set current_challenge to challenge2
+                        # and set challenge1 complete to 1
+                        if myjson["current_challenge"] == "challenge1":
+                            if len(myjson["challenge1"]["matches"]) >= 5:
+                                myjson["challenge1"]["complete"] = 1
+                                myjson["current_challenge"] = "challenge2"
+
                         await client.json.set(r.myUUID, ".", myjson)
                         return myjson
                     else:
