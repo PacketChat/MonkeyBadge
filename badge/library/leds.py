@@ -86,12 +86,6 @@ class LEDHandler:
         # Initialize an empty list to store selected lightshows:
         self.selected_lightshows = []
 
-        # Randomly select 5 unique key-value pairs:
-        # while len(self.selected_lightshows) < 5:
-        #    lightshow = random.choice(list(self.lightshow_dict.items()))
-        #    if lightshow not in self.selected_lightshows:
-        #        self.selected_lightshows.append(lightshow)
-
         while len(self.selected_lightshows) < 5:
             random_key = random.choice(list(self.lightshow_dict.keys()))
             if random_key not in self.selected_lightshows:
@@ -656,55 +650,6 @@ class LEDHandler:
 
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
-
-    #    def do_monkey_spaz(
-    #        self,
-    #        name,
-    #        group_indices,
-    #        group_color,
-    #        duration_s=5,
-    #        blink_duration_ms=100,
-    #        min_delay_ms=100,
-    #        max_delay_ms=500,
-    #    ):
-    #        """
-    #        Runs a light show with a swelling and blinking group.
-    #
-    #        Parameters:
-    #        :param name: Name of the light show (e.g., "Shade", "Kans", "MiC").
-    #        :param group_indices: Indices of the group of NeoPixels.
-    #        :param group_color: Color of the group in RGB format.
-    #        :param duration_s: Total duration of the show.
-    #        :param blink_duration_ms: Duration for which the group will blink.
-    #        :param min_delay_ms: Minimum delay between spaz bursts.
-    #        :param max_delay_ms: Maximum delay between spaz bursts.
-    #        """
-    #        end_time = time.ticks_ms() + duration_s * 1000
-    #
-    #        while time.ticks_ms() < end_time:
-    #            # Simulate a swelling effect by gradually increasing the
-    #            # brightness of the group's LEDs:
-    #            for brightness_factor in range(1, 11):
-    #                for index in group_indices:
-    #                    self.np_light.set_color(
-    #                        index, scale_color(group_color, brightness_factor / 10)
-    #                    )
-    #                time.sleep_ms(100)
-    #
-    #            # Simulate blinking by turning the group off and on:
-    #            for _ in range(blink_duration_ms // 50):
-    #                for index in group_indices:
-    #                    self.np_light.set_color(index, (0, 0, 0))
-    #                time.sleep_ms(25)
-    #                for index in group_indices:
-    #                    self.np_light.set_color(index, group_color)
-    #                time.sleep_ms(25)
-    #
-    #            # Turn off all LEDs to complete the burst:
-    #            self.do_all_off()
-    #
-    #            # Delay for a random duration before the next burst:
-    #            time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
     def do_warm_swell(self):
         """
