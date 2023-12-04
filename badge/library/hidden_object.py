@@ -4,7 +4,6 @@ import os
 from library.ir import IR
 
 import config  # Import the config file
-import monkeyconfig
 
 
 class HiddenObject:
@@ -29,11 +28,10 @@ class HiddenObject:
         raise ValueError("no id found")
 
     def _broadcast(self):
-        self.infrared.send([monkeyconfig.IR_OPCODES["HIDDEN_OBJECT"].code])
+        self.infrared.send([config.IR_OPCODES["HIDDEN_OBJECT"].code])
 
     def run(self):
         """game loop"""
         while True:
             self._broadcast()
             machine.lightsleep(config.TRANSIT_PERIOD)
-            break

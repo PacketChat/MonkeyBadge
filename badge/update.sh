@@ -17,7 +17,6 @@ fi
 # mpremote cp boot.py :
 # mpremote $1 mip install github:peterhinch/micropython-async/v3/threadsafe
 mpremote run "$here/tools/clean_flags.py"
-mpremote cp config.py :monkeyconfig.py
 mpremote cp -r library/ir_tx :
 mpremote cp config.py :
 mpremote cp main.py :main.py
