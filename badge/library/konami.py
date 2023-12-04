@@ -5,6 +5,7 @@ from machine import Pin, SoftI2C
 import ssd1306  # type: ignore
 import framebuf
 import neopixel
+import gc
 
 KONAMI_LOGO = bytearray(
     b"\x00\x18\x00\x00x\x00\x00\xf8\x00\x01\xf8\x00\x01"
@@ -375,10 +376,12 @@ def main():
     k = Konami()
     while True:
         do_heartbeat(np)
+        gc.collect()
         if k.won:
             np.fill((0, 0, 0))
             np.write()
             break
+        time.sleep_ms(50)
 
 
 if __name__ == "__main__":
