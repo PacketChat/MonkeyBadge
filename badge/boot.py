@@ -1,6 +1,7 @@
 import asyncio
 import config
 import network
+from library.display import Display
 from library.ota.update import OTA
 
 
@@ -35,3 +36,11 @@ async def check_ota():
 print("Performing POST")
 print("Performing power on OTA check")
 asyncio.run(connect_to_wifi(config.WIFI_SSID, config.WIFI_PASSWORD))
+display = DisplayHandler(
+    config.OLED_WIDTH,
+    config.OLED_HEIGHT,
+    config.OLED_SDA_PIN,
+    config.OLED_SCL_PIN,
+)
+display.print_logo()
+del display

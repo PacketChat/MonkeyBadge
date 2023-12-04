@@ -91,7 +91,7 @@ class GameClient:
         request_body = {"myUUID": uuid, "remoteIRID": str(IRID)}
 
         sc, j = self.secure_api_request(request_url, token, request_body)
-        print(sc, j)
+
         if sc == 200:
             return j
         elif sc == 400:
