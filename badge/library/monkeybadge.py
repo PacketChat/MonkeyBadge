@@ -132,6 +132,10 @@ class MonkeyBadge:
             ]
         )
         self.challenge_menu = Menu([], title="Game Status", parent=self.about_menu)
+
+        self.challenge_menu.items.extend(
+            [MenuItem("Curr Challenge", self.current_challenge_status)]
+        )
         self.main_menu.items.extend(
             [
                 MenuItem("Radio", submenu=self.radio_menu),
@@ -383,6 +387,28 @@ class MonkeyBadge:
         print("Applying Factory Firmware...")
         self.show_timed_message("Resetting")
         self.flash_badge(self.reset_url)
+
+    def current_challenge_status(self):
+        if self.current_challenge is None:
+            return
+        msgs = [self.current_challenge]
+        if self.current_challenge == "challenge1":
+            msgs = ["Challenge 1", f"Friends: {len(self.friends)}"]
+        elif self.current_challenge == "challenge2":
+            msgs = [
+                "Challenge 2",
+                "".join("o" if x else "x" for x in self.challenge2["status"]),
+            ]
+        elif self.current_challenge == "challenge3":
+            msgs = [
+                "Challenge 3",
+                "",
+                f'Cans: {self.challenge3["interact_cans"]}',
+                f'Mic: {self.challenge3["interact_mic"]}',
+                f'Shade: {self.challenge3["interact_shade"]}',
+            ]
+
+        self.show_timed_message(msgs)
 
     # social wrappers
     def find_badges(self):
