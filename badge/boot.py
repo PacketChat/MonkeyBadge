@@ -1,7 +1,7 @@
 import asyncio
 import config
 import network
-from library.display import Display
+from library.display import DisplayHandler
 from library.ota.update import OTA
 
 
