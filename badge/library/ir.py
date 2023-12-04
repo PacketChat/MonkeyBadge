@@ -1,6 +1,5 @@
 """IR API Layer"""
 from machine import Pin
-import micropython
 import time
 
 import config
