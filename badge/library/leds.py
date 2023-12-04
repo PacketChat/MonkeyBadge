@@ -4,7 +4,7 @@ import math
 import neopixel
 import random
 import time
-import random
+
 
 # Utility Functions:
 def scale_color(rgb, brightness_factor):
@@ -76,22 +76,26 @@ class LEDHandler:
             "do_countdown_timer": "Countdown",
             "do_monkey_roll_call": "Roll Call",
             "do_random_monkey_spaz": "Random Spaz",
-            "do_monkey_spaz": "Spaz",
             "do_predator_countdown": "Predator",
             "do_predator_purple_magenta_cyan_countdown": "PMC Predator",
             "do_slot_machine_effect": "Slot Machine",
             "do_jackpot_effect": "Jackpot",
-            "do_boot_sequence": "Boot Sequence"
+            "do_boot_sequence": "Boot Sequence",
         }
 
-        # Initialize an empty list to store selected lightshows
+        # Initialize an empty list to store selected lightshows:
         self.selected_lightshows = []
 
-        # Randomly select 5 unique key-value pairs
+        # Randomly select 5 unique key-value pairs:
+        # while len(self.selected_lightshows) < 5:
+        #    lightshow = random.choice(list(self.lightshow_dict.items()))
+        #    if lightshow not in self.selected_lightshows:
+        #        self.selected_lightshows.append(lightshow)
+
         while len(self.selected_lightshows) < 5:
-            lightshow = random.choice(list(self.lightshow_dict.items()))
-            if lightshow not in self.selected_lightshows:
-                self.selected_lightshows.append(lightshow)
+            random_key = random.choice(list(self.lightshow_dict.keys()))
+            if random_key not in self.selected_lightshows:
+                self.selected_lightshows.append(random_key)
 
     def get_selected_lightshows(self):
         return self.selected_lightshows
@@ -155,160 +159,120 @@ class LEDHandler:
         evileye = machine.Pin(2, machine.Pin.OUT)
         self._blink(evileye)
 
-    def wheel(self, pos):
-        """
-        Generate a color from a position between 0 and 255.
+    def do_rainbow_cycle(self):
+        """Cycle through rainbow colors across the LEDs at a fixed speed."""
 
-        This function uses a position value to generate an RGB color. The
-        position determines the hue of the color in a way that when the
-        position value ranges from 0 to 255, the function will produce a full
-        spectrum of colors transitioning from red to green to blue and back to
-        red.
+        # Internal helper function to generate a color from a position:
+        def wheel(pos):
+            if pos < 85:
+                return (pos * 3, 255 - pos * 3, 0)
+            elif pos < 170:
+                pos -= 85
+                return (255 - pos * 3, 0, pos * 3)
+            else:
+                pos -= 170
+                return (0, pos * 3, 255 - pos * 3)
 
-        Parameters:
-        :param pos: An integer value between 0 and 255 inclusive.
-        :return: RGB color tuple (R, G, B).
-        """
+        # Fixed speed for the rainbow cycle (can adjust as needed):
+        speed = 10
 
-        # When position is in the range 0-84, transition from green to red:
-        if pos < 85:
-            return (pos * 3, 255 - pos * 3, 0)
-        # When position is in the range 85-169, transition from red to blue:
-        elif pos < 170:
-            pos -= 85
-            return (255 - pos * 3, 0, pos * 3)
-        # When position is in the range 170-255, transition from blue to green:
-        else:
-            pos -= 170
-            return (0, pos * 3, 255 - pos * 3)
-
-    def do_rainbow_cycle(self, speed=10):
-        """Cycle through rainbow colors across the LEDs."""
         # Loop through a range of values from 0 to 254:
         for j in range(255):
             # Loop through each of the 7 LEDs:
             for i in range(7):
                 # Generate a rainbow color for the current LED:
-                color = self.wheel((i + j) & 255)
+                color = wheel((i + j) & 255)
                 # Set the LED's color to the generated rainbow color:
                 self.np_light.set_color(i, color)
-            # Pause for 5 ms to create a smooth transition between colors:
+            # Pause for a smooth transition between colors:
             time.sleep_ms(speed)
+
         self.do_all_off()  # Turn off all LEDs after cycling through the rainbow.
 
-    def do_firework_burst(self, index, color, fade_duration_ms=100, fade_steps=10):
-        """
-        Simulates a firework burst on a given LED index. This is a helper
-        method for the do_fireworks_show() method.
+    def do_fireworks_show(self):
+        """Runs a fireworks show with hardcoded duration and delays."""
 
-        Parameters:
-        :param index: Index of the LED.
-        :param color: Color tuple (R, G, B).
-        :param fade_duration_ms: Total duration to fade the firework.
-        :param fade_steps: Number of steps to fade the color.
-        """
+        # Predefined values for the fireworks show:
+        duration_s = 10
+        min_delay_ms = 50
+        max_delay_ms = 300
+        fade_duration_ms = 100
+        fade_steps = 10
 
-        # Calculate the delay between each fade step based on total duration
-        # and number of steps:
-        fade_delay = fade_duration_ms // fade_steps
+        # Inner function to simulate a firework burst:
+        def do_firework_burst(index, color):
+            fade_delay = fade_duration_ms // fade_steps
+            r, g, b = color
+            for i in range(fade_steps):
+                fade_factor = (fade_steps - i) / fade_steps
+                self.np_light.set_color(
+                    index,
+                    (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)),
+                )
+                time.sleep_ms(fade_delay)
+            self.do_all_off()
 
-        # Split the RGB color values for easier manipulation:
-        r, g, b = color
-
-        # Fade out the color over a series of steps:
-        for i in range(fade_steps):
-            # Calculate the fading factor for this step based on its position
-            # in the fade sequence:
-            fade_factor = (fade_steps - i) / fade_steps
-
-            # Adjust the color's intensity based on the fade factor and set the
-            # modified color:
-            self.np_light.set_color(
-                index,
-                (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)),
-            )
-
-            # Wait for the specified delay before proceeding to the next fade
-            # step:
-            time.sleep_ms(fade_delay)
-
-        # Turn off all LEDs to complete the firework burst effect:
-        self.do_all_off()
-
-    def do_fireworks_show(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
-        """
-        Runs a fireworks show for the specified duration. This depends on the
-        do_firework_burst() method.
-
-        Parameters:
-        :param duration_s: Total duration of the fireworks show.
-        :param min_delay_ms: Minimum delay between firework bursts.
-        :param max_delay_ms: Maximum delay between firework bursts.
-        """
+        # Running the fireworks show
         end_time = time.ticks_ms() + duration_s * 1000
-
         while time.ticks_ms() < end_time:
-            # Choose a random LED:
             index = random.randint(0, 6)
-
-            # Choose a random color:
             color = (
                 random.randint(0, 255),
                 random.randint(0, 255),
                 random.randint(0, 255),
             )
-
-            # Simulate a firework burst on the chosen LED with the chosen
-            # color:
-            self.do_firework_burst(index, color)
-
-            # Delay for a random duration before the next burst:
+            do_firework_burst(index, color)
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_grouped_fireworks_show(
-        self, duration_s=10, min_delay_ms=50, max_delay_ms=300
-    ):
-        """
-        Runs a fireworks show with grouped bursts for the specified duration.
+    def do_grouped_fireworks_show(self):
+        """Runs a grouped fireworks show with hardcoded duration and delays."""
 
-        Parameters:
-        :param duration_s: Total duration of the fireworks show.
-        :param min_delay_ms: Minimum delay between firework bursts.
-        :param max_delay_ms: Maximum delay between firework bursts.
-        """
-        end_time = time.ticks_ms() + duration_s * 1000
+        # Predefined values for the grouped fireworks show:
+        duration_s = 10
+        min_delay_ms = 50
+        max_delay_ms = 300
+        fade_duration_ms = 100
+        fade_steps = 10
+
+        # Internal helper function to simulate a firework burst:
+        def do_firework_burst(index, color):
+            fade_delay = fade_duration_ms // fade_steps
+            r, g, b = color
+            for i in range(fade_steps):
+                fade_factor = (fade_steps - i) / fade_steps
+                self.np_light.set_color(
+                    index,
+                    (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)),
+                )
+                time.sleep_ms(fade_delay)
+            self.do_all_off()
+
+        # Group definitions:
         groups = [
             [0, 1],  # Group for NeoPixels 1 and 2.
             [2, 3],  # Group for NeoPixels 3 and 4.
             [4, 5, 6],  # Group for NeoPixels 5, 6, and 7.
         ]
 
+        # Running the grouped fireworks show:
+        end_time = time.ticks_ms() + duration_s * 1000
         while time.ticks_ms() < end_time:
-            # Randomly select a group:
             group = random.choice(groups)
-
-            # Choose a random bright color for the group burst:
             color = (
                 random.randint(100, 255),
                 random.randint(0, 255),
                 random.randint(0, 255),
             )
-
-            # Simulate a firework burst for the LEDs in the chosen group:
             for index in group:
-                self.do_firework_burst(index, color)
-
-            # Delay for a random duration before the next burst:
+                do_firework_burst(index, color)
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_heartbeat(self, color=(255, 0, 0), beats_per_minute=60):
-        """
-        Simulate a heartbeat pulse with the given color.
+    def do_heartbeat(self):
+        """Simulates a heartbeat pulse with a predefined color and speed."""
 
-        Parameters:
-        :param color: Color tuple (R, G, B).
-        :param beats_per_minute: Heartbeat speed.
-        """
+        # Predefined color and heartbeat speed:
+        color = (255, 0, 0)  # Red color.
+        beats_per_minute = 60  # Heartbeat speed in beats per minute.
 
         # Calculate the duration of one full heartbeat pulse (both on and off)
         # based on BPM:
@@ -316,7 +280,8 @@ class LEDHandler:
 
         # Illuminate all LEDs with the specified color to simulate the "beat"
         # of the heart:
-        self.np_light.fill(color)
+        for i in range(7):  # Assuming 7 LEDs
+            self.np_light.set_color(i, color)
 
         # Sleep for half the pulse duration (time the heartbeat is "on"):
         time.sleep_ms(int(pulse_duration * 500))
@@ -328,18 +293,15 @@ class LEDHandler:
         # heartbeat is "off"):
         time.sleep_ms(int(pulse_duration * 500))
 
-    def do_double_heartbeat(
-        self, color=(255, 0, 0), beats_per_minute=60, pause_between_beats_ms=500
-    ):
+    def do_double_heartbeat(self):
         """
         Simulate a double heartbeat pulse with a quick second beat.
-
-        Parameters:
-        :param color: Color tuple (R, G, B) for the heartbeat.
-        :param beats_per_minute: Heartbeat speed.
-        :param pause_between_beats_ms: Time to pause between the first and
-        second beats in milliseconds.
         """
+
+        # Predefined color, beats per minute and pause values:
+        color = (255, 0, 0)
+        beats_per_minute = 60
+        pause_between_beats_ms = 50
 
         # Calculate the duration of one full heartbeat pulse (both on and off)
         # based on BPM:
@@ -373,14 +335,14 @@ class LEDHandler:
         # Sleep for the remaining half of the first heartbeat pulse duration:
         time.sleep_ms(int(pulse_duration * 250))
 
-    def do_chaser(self, color=(255, 0, 0), duration_s=10):
+    def do_chaser(self):
         """
         Run a chaser light back and forth.
-
-        Paremeters:
-        :param color: Color tuple (R, G, B).
-        :param duration_s: How long the pattern runs.
         """
+
+        # Predefined color and duration:
+        color = (255, 0, 0)
+        duration_s = 10
 
         # Calculate when the effect should end based on the provided duration:
         end_time = time.ticks_ms() + duration_s * 1000
@@ -412,15 +374,16 @@ class LEDHandler:
             if position == 6 or position == 0:
                 direction = -direction
 
-    def do_random_twinkle(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
+        # Turn off all LEDs to complete the second heartbeat pulse:
+        self.do_all_off()
+
+    def do_random_twinkle(self):
         """
         Randomly twinkle LEDs.
-
-        Parameters:
-        :param duration_s: Duration of the pattern.
-        :param min_delay_ms: Minimum delay between twinkles.
-        :param max_delay_ms: Maximum delay between twinkles.
         """
+        duration_s = 10  # Duration of the pattern.
+        min_delay_ms = 50  # Minimum delay between twinkles.
+        max_delay_ms = 300  # Maximum delay between twinkles.
 
         # Calculate the end time for the effect based on the provided duration:
         end_time = time.ticks_ms() + duration_s * 1000
@@ -448,17 +411,15 @@ class LEDHandler:
             # Turn off all LEDs to simulate the end of a twinkle:
             self.do_all_off()
 
-    def do_gradient_fade(
-        self, start_color=(255, 0, 0), end_color=(0, 0, 255), duration_s=10
-    ):
+    def do_gradient_fade(self):
         """
         Fade from start color to end color across all LEDs.
-
-        Parameters:
-        :param start_color: Starting color tuple (R, G, B).
-        :param end_color: Ending color tuple (R, G, B).
-        :param duration_s: Duration of the fade.
         """
+
+        # Predefined start and end colors, and duration
+        start_color = (255, 0, 0)  # Starting color: Red
+        end_color = (0, 0, 255)  # Ending color: Blue
+        duration_s = 10  # Duration of the fade in seconds
 
         # Define the number of gradient steps to fade between colors:
         steps = 100
@@ -487,15 +448,18 @@ class LEDHandler:
             # Pause for the calculated delay to make the fade visible:
             time.sleep_ms(int(delay * 1000))
 
-    def do_strobe(self, color=(0, 100, 100), duration_s=5, flashes_per_second=10):
+        # Turn off all LEDs to simulate the end of the gradient fade:
+        self.do_all_off()
+
+    def do_strobe(self):
         """
         Strobe effect with the given color.
-
-        Parameters:
-        :param color: Color tuple (R, G, B).
-        :param duration_s: Duration of the effect.
-        :param flashes_per_second: How many times it flashes in a second.
         """
+
+        # Predefined color, duration and flashes per second:
+        color = (0, 100, 100)  # Color tuple (R, G, B).
+        duration_s = 5  # Duration of the effect.
+        flashes_per_second = 10  # How many times it flashes in a second.
 
         # Calculate the ending time based on the current time and desired
         # strobe duration:
@@ -522,20 +486,19 @@ class LEDHandler:
             # flash:
             time.sleep_ms(int(on_time))
 
-    def do_popcorn_effect(
-        self, duration_s=10, pop_duration_ms=50, min_delay_ms=10, max_delay_ms=200
-    ):
+    def do_popcorn_effect(self):
         """
         Creates a popcorn effect by randomly illuminating LEDs for short
         durations, this is similiar to the fireworks effect, but doesn't depend
-        on a helper method.
-
-        Parameters:
-        - duration_s: The total duration of the popcorn effect in seconds.
-        - pop_duration_ms: Duration for which a 'popped' LED remains lit.
-        - min_delay_ms: Minimum delay between individual LED pops.
-        - max_delay_ms: Maximum delay between individual LED pops.
+        on a helper function.
         """
+
+        # Predefined durations and delays:
+        duration_s = 10  # The total duration of the popcorn effect in seconds.
+        pop_duration_ms = 50  # Duration for which a 'popped' LED remains lit.
+        min_delay_ms = 10  # Minimum delay between individual LED pops.
+        max_delay_ms = 200  # Maximum delay between individual LED pops.
+
         # Calculate the ending time based on the current time and desired
         # duration:
         end_time = time.ticks_ms() + duration_s * 1000
@@ -563,15 +526,15 @@ class LEDHandler:
             # Pause for a random duration between individual LED pops:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_countdown_timer(self, duration_in_seconds):
+    def do_countdown_timer(self):
         """
         Run a countdown timer using LEDs. Each LED represents a portion of the
         total duration. As the time passes, LEDs turn off sequentially. If you
         set the duration to 7, each light will display for 1 second.
-
-        Arguments:
-        - duration_in_seconds: The total duration of the countdown in seconds.
         """
+        # Predefined duration:
+        duration_in_seconds = 7  # The total duration of the countdown in seconds.
+
         num_pixels = len(self.np_light.np)
 
         # Calculate how long each LED should stay on:
@@ -590,16 +553,38 @@ class LEDHandler:
         # Ensure all LEDs are off at the end of the countdown:
         self.do_all_off()
 
-    def do_monkey_roll_call(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
+    def do_monkey_roll_call(self):
         """
         Runs a monkey-themed roll call show with cycling colored groups.
-
-        Parameters:
-        :param duration_s: Total duration of the show.
-        :param min_delay_ms: Minimum delay between roll call bursts.
-        :param max_delay_ms: Maximum delay between roll call bursts.
         """
+
+        # Predefined duration and delays:
+        duration_s = 10  # Total duration of the show.
+        min_delay_ms = 50  # Minimum delay between roll call bursts.
+        max_delay_ms = 300  # Maximum delay between roll call bursts.
+
+        # Predefined values for the fireworks show:
+        duration_s = 10
+        min_delay_ms = 50
+        max_delay_ms = 300
+        fade_duration_ms = 100
+        fade_steps = 10
+
+        # Inner function to simulate a firework burst:
+        def do_firework_burst(index, color):
+            fade_delay = fade_duration_ms // fade_steps
+            r, g, b = color
+            for i in range(fade_steps):
+                fade_factor = (fade_steps - i) / fade_steps
+                self.np_light.set_color(
+                    index,
+                    (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)),
+                )
+                time.sleep_ms(fade_delay)
+            self.do_all_off()
+
         end_time = time.ticks_ms() + duration_s * 1000
+
         groups = [
             ([0, 1], (87, 8, 255)),  # Group 1 (Purple) for NeoPixels 1 and 2.
             ([2, 3], (255, 0, 255)),  # Group 2 (Magenta) for NeoPixels 3 and 4.
@@ -615,7 +600,7 @@ class LEDHandler:
 
             # Simulate a roll call burst for the LEDs in the chosen group:
             for index in group_indices:
-                self.do_firework_burst(index, group_color)
+                do_firework_burst(index, group_color)
 
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
@@ -623,16 +608,37 @@ class LEDHandler:
             # Move to the next group and wrap around if needed:
             group_index = (group_index + 1) % len(groups)
 
-    def do_random_monkey_spaz(self, duration_s=10, min_delay_ms=50, max_delay_ms=300):
+    def do_random_monkey_spaz(self):
         """
         Runs a random order of the monkey-themed roll call show with colored
         groups.
-
-        Parameters:
-        :param duration_s: Total duration of the show.
-        :param min_delay_ms: Minimum delay between roll call bursts.
-        :param max_delay_ms: Maximum delay between roll call bursts.
         """
+
+        # Predefined duration and delays:
+        duration_s = 10  # Total duration of the show.
+        min_delay_ms = 50  # Minimum delay between roll call bursts.
+        max_delay_ms = 300  #  Maximum delay between roll call bursts.
+
+        # Predefined values for the fireworks show:
+        duration_s = 10
+        min_delay_ms = 50
+        max_delay_ms = 300
+        fade_duration_ms = 100
+        fade_steps = 10
+
+        # Inner function to simulate a firework burst:
+        def do_firework_burst(index, color):
+            fade_delay = fade_duration_ms // fade_steps
+            r, g, b = color
+            for i in range(fade_steps):
+                fade_factor = (fade_steps - i) / fade_steps
+                self.np_light.set_color(
+                    index,
+                    (int(r * fade_factor), int(g * fade_factor), int(b * fade_factor)),
+                )
+                time.sleep_ms(fade_delay)
+            self.do_all_off()
+
         end_time = time.ticks_ms() + duration_s * 1000
         groups = [
             ([0, 1], (87, 8, 255)),  # Group 1 (Purple) for NeoPixels 1 and 2.
@@ -646,71 +652,73 @@ class LEDHandler:
 
             # Simulate a roll call burst for the LEDs in the chosen group:
             for index in group_indices:
-                self.do_firework_burst(index, group_color)
+                do_firework_burst(index, group_color)
 
             # Delay for a random duration before the next burst:
             time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-    def do_monkey_spaz(
-        self,
-        name,
-        group_indices,
-        group_color,
-        duration_s=5,
-        blink_duration_ms=100,
-        min_delay_ms=100,
-        max_delay_ms=500,
-    ):
-        """
-        Runs a light show with a swelling and blinking group.
+    #    def do_monkey_spaz(
+    #        self,
+    #        name,
+    #        group_indices,
+    #        group_color,
+    #        duration_s=5,
+    #        blink_duration_ms=100,
+    #        min_delay_ms=100,
+    #        max_delay_ms=500,
+    #    ):
+    #        """
+    #        Runs a light show with a swelling and blinking group.
+    #
+    #        Parameters:
+    #        :param name: Name of the light show (e.g., "Shade", "Kans", "MiC").
+    #        :param group_indices: Indices of the group of NeoPixels.
+    #        :param group_color: Color of the group in RGB format.
+    #        :param duration_s: Total duration of the show.
+    #        :param blink_duration_ms: Duration for which the group will blink.
+    #        :param min_delay_ms: Minimum delay between spaz bursts.
+    #        :param max_delay_ms: Maximum delay between spaz bursts.
+    #        """
+    #        end_time = time.ticks_ms() + duration_s * 1000
+    #
+    #        while time.ticks_ms() < end_time:
+    #            # Simulate a swelling effect by gradually increasing the
+    #            # brightness of the group's LEDs:
+    #            for brightness_factor in range(1, 11):
+    #                for index in group_indices:
+    #                    self.np_light.set_color(
+    #                        index, scale_color(group_color, brightness_factor / 10)
+    #                    )
+    #                time.sleep_ms(100)
+    #
+    #            # Simulate blinking by turning the group off and on:
+    #            for _ in range(blink_duration_ms // 50):
+    #                for index in group_indices:
+    #                    self.np_light.set_color(index, (0, 0, 0))
+    #                time.sleep_ms(25)
+    #                for index in group_indices:
+    #                    self.np_light.set_color(index, group_color)
+    #                time.sleep_ms(25)
+    #
+    #            # Turn off all LEDs to complete the burst:
+    #            self.do_all_off()
+    #
+    #            # Delay for a random duration before the next burst:
+    #            time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
 
-        Parameters:
-        :param name: Name of the light show (e.g., "Shade", "Kans", "MiC").
-        :param group_indices: Indices of the group of NeoPixels.
-        :param group_color: Color of the group in RGB format.
-        :param duration_s: Total duration of the show.
-        :param blink_duration_ms: Duration for which the group will blink.
-        :param min_delay_ms: Minimum delay between spaz bursts.
-        :param max_delay_ms: Maximum delay between spaz bursts.
-        """
-        end_time = time.ticks_ms() + duration_s * 1000
-
-        while time.ticks_ms() < end_time:
-            # Simulate a swelling effect by gradually increasing the
-            # brightness of the group's LEDs:
-            for brightness_factor in range(1, 11):
-                for index in group_indices:
-                    self.np_light.set_color(
-                        index, scale_color(group_color, brightness_factor / 10)
-                    )
-                time.sleep_ms(100)
-
-            # Simulate blinking by turning the group off and on:
-            for _ in range(blink_duration_ms // 50):
-                for index in group_indices:
-                    self.np_light.set_color(index, (0, 0, 0))
-                time.sleep_ms(25)
-                for index in group_indices:
-                    self.np_light.set_color(index, group_color)
-                time.sleep_ms(25)
-
-            # Turn off all LEDs to complete the burst:
-            self.do_all_off()
-
-            # Delay for a random duration before the next burst:
-            time.sleep_ms(random.randint(min_delay_ms, max_delay_ms))
-
-    def do_warm_swell(self, duration_s=5, swell_color=(255, 100, 0), swell_steps=100):
+    def do_warm_swell(self):
         """
         Creates a warm swell effect, where LEDs gradually brighten and then
         fade.
-
-        Parameters:
-        :param duration_s: Total duration of the swell effect in seconds.
-        :param swell_color: Color tuple (R, G, B) for the swell.
-        :param swell_steps: Number of steps for the swell to reach max
-        brightness and fade.
         """
+
+        # Predefined duration, color and steps:
+        duration_s = 5  # Total duration of the swell effect in seconds.
+        swell_color = (255, 100, 0)  #  Color tuple (R, G, B) for the swell.
+        swell_steps = (
+            100  # Number of steps for the swell to reach max brightness and fade.
+        )
+
         delay_time = duration_s / (2 * swell_steps)  # Adjusted for up and down
 
         # Swell up and down:
@@ -729,13 +737,13 @@ class LEDHandler:
         # Turn off the LEDs at the end:
         self.do_all_off()
 
-    def do_predator_countdown(self, duration_s=10):
+    def do_predator_countdown(self):
         """
         Simulates the countdown timer effect from the movie Predator.
-
-        Parameters:
-        :param duration_s: Total duration of the countdown effect in seconds.
         """
+
+        # Predefined duration:
+        duration_s = 10  # Total duration of the countdown effect in seconds.
 
         # Groupings for the LEDs: First 2, next 2, last 3.
         groups = [[0, 1], [2, 3], [4, 5, 6]]
@@ -773,13 +781,10 @@ class LEDHandler:
                         self.np_light.set_color(led, (0, 0, 0))
                         time.sleep_ms(500)
 
-    def do_predator_purple_magenta_cyan_countdown(self, duration_s=15):
+    def do_predator_purple_magenta_cyan_countdown(self):
         """
         Simulates the cyan-magenta-purple countdown timer effect similar to
         the movie Predator.
-
-        Parameters:
-        :param duration_s: Total duration of the countdown effect in seconds.
         """
 
         # Groupings for the LEDs: First 2, next 2, last 3:
@@ -821,13 +826,13 @@ class LEDHandler:
                     self.np_light.set_color(led, (0, 0, 0))
                     time.sleep_ms(500)
 
-    def do_slot_machine_effect(self, duration_s=10):
+    def do_slot_machine_effect(self):
         """
         Simulates the vibrant blinking effect similar to a slot machine.
-
-        Parameters:
-        :param duration_s: Total duration of the slot machine effect in seconds.
         """
+
+        # Predefined duration:
+        duration_s = 10  # Total duration of the slot machine effect in seconds.
 
         # Define some vibrant colors: Red, Green, Blue, Yellow, Cyan, Magenta,
         # White:
@@ -861,13 +866,13 @@ class LEDHandler:
                 self.do_all_off()
                 time.sleep_ms(100)  # OFF state delay.
 
-    def do_jackpot_effect(self, duration_s=10):
+    def do_jackpot_effect(self):
         """
         Simulates a jackpot effect similar to a slot machine hitting a big win.
-
-        Parameters:
-        :param duration_s: Total duration of the jackpot effect in seconds.
         """
+
+        # Predefined duration:
+        duration_s = 10  # Total duration of the jackpot effect in seconds.
 
         # Define some vibrant colors: Red, Green, Blue, Yellow, Cyan, Magenta,
         # White:

@@ -241,15 +241,47 @@ class MonkeyBadge:
             return _f
 
         # Populate the menu items from the dictionary:
-        for lightshow_name, lightshow_description in self.leds.lightshow_dict.items():
-            menu_item = MenuItem(lightshow_name, self._lightshow(lightshow_name))
-            self.leds.selected_lightshows.append(menu_item)
+        for i in self.leds.selected_lightshows:
+            desc = self.leds.lightshow_dict[i]
 
-        #self.lightshow_menu.items.extend(
+            self.lightshow_menu.items.extend([MenuItem(desc, _lightshow(i))])
+
+        # Original menu items for reference:
+        # self.lightshow_menu.items.extend(
         #    [
         #        MenuItem("popcorn", _lightshow("do_popcorn_effect")),
         #        MenuItem("roll call", _lightshow("do_monkey_roll_call")),
         #        MenuItem("heartbeat", _lightshow("do_heartbeat")),
+        #    ]
+        # )
+        # Temporary lightshow menu for testing:
+        #self.lightshow_menu.items.extend(
+        #    [
+        #        MenuItem("do_cyan_sweep", _lightshow("do_cyan_sweep")),
+        #        MenuItem("do_magenta_sweep", _lightshow("do_magenta_sweep")),
+        #        MenuItem("do_purple_sweep", _lightshow("do_purple_sweep")),
+        #        MenuItem("do_kans_wink", _lightshow("do_kans_wink")),
+        #        MenuItem("do_rainbow_cycle", _lightshow("do_rainbow_cycle")),
+        #        MenuItem("do_fireworks_show", _lightshow("do_fireworks_show")),
+        #        MenuItem("do_grouped_fireworks_show", _lightshow("do_grouped_fireworks_show")),
+        #        MenuItem("do_heartbeat", _lightshow("do_heartbeat")),
+        #        MenuItem("do_double_heartbeat", _lightshow("do_double_heartbeat")),
+        #        MenuItem("do_chaser", _lightshow("do_chaser")),
+        #        MenuItem("do_random_twinkle", _lightshow("do_random_twinkle")),
+        #        MenuItem("do_gradient_fade", _lightshow("do_gradient_fade")),
+        #        MenuItem("do_strobe", _lightshow("do_strobe")),
+        #        MenuItem("do_popcorn_effect", _lightshow("do_popcorn_effect")),
+        #        MenuItem("do_countdown_timer", _lightshow("do_countdown_timer")),
+        #        MenuItem("do_monkey_roll_call", _lightshow("do_monkey_roll_call")),
+        #        MenuItem("do_random_monkey_spaz", _lightshow("do_random_monkey_spaz")),
+        #        MenuItem("do_predator_countdown", _lightshow("do_predator_countdown")),
+        #        MenuItem(
+        #            "do_predator_purple_magenta_cyan_countdown",
+        #            _lightshow("do_predator_purple_magenta_cyan_countdown"),
+        #        ),
+        #        MenuItem("do_slot_machine_effect", _lightshow("do_slot_machine_effect")),
+        #        MenuItem("do_jackpot_effect", _lightshow("do_jackpot_effect")),
+        #        MenuItem("do_boot_sequence", _lightshow("do_boot_sequence")),
         #    ]
         #)
         self.oled_brightness_menu.items.extend(
@@ -762,4 +794,4 @@ class MonkeyBadge:
             print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
 
-            time.sleep(2)
+            time.sleep(1)
