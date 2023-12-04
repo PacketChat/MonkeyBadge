@@ -396,7 +396,7 @@ class MonkeyBadge:
         elif self.current_challenge == "challenge2":
             msgs = [
                 "Challenge 2",
-                "".join("o" if x else "x" for x in self.challenge1["status"]),
+                "".join("o" if x else "x" for x in self.challenge2["status"]),
             ]
         elif self.current_challenge == "challenge3":
             msgs = [
