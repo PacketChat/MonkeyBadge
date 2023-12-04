@@ -4,7 +4,7 @@ import math
 import neopixel
 import random
 import time
-
+import random
 
 # Utility Functions:
 def scale_color(rgb, brightness_factor):
@@ -57,6 +57,44 @@ class LEDHandler:
         """
         self.np_light = NeoPixelLight(18, 7, brightness=0.8)
         self.current_show = thread.allocate_lock()
+
+        self.lightshow_dict = {
+            "do_cyan_sweep": "Cyan Sweep",
+            "do_magenta_sweep": "Magenta Sweep",
+            "do_purple_sweep": "Purple Sweep",
+            "do_kans_wink": "Kans Wink",
+            "do_rainbow_cycle": "Rainbow",
+            "do_fireworks_show": "Fireworks I",
+            "do_grouped_fireworks_show": "Fireworks II",
+            "do_heartbeat": "Heartbeat",
+            "do_double_heartbeat": "Dbl Heartbeat",
+            "do_chaser": "Chaser",
+            "do_random_twinkle": "Random Twinkle",
+            "do_gradient_fade": "Gradient Fade",
+            "do_strobe": "Strobe",
+            "do_popcorn_effect": "Popcorn",
+            "do_countdown_timer": "Countdown",
+            "do_monkey_roll_call": "Roll Call",
+            "do_random_monkey_spaz": "Random Spaz",
+            "do_monkey_spaz": "Spaz",
+            "do_predator_countdown": "Predator",
+            "do_predator_purple_magenta_cyan_countdown": "PMC Predator",
+            "do_slot_machine_effect": "Slot Machine",
+            "do_jackpot_effect": "Jackpot",
+            "do_boot_sequence": "Boot Sequence"
+        }
+
+        # Initialize an empty list to store selected lightshows
+        self.selected_lightshows = []
+
+        # Randomly select 5 unique key-value pairs
+        while len(self.selected_lightshows) < 5:
+            lightshow = random.choice(list(self.lightshow_dict.items()))
+            if lightshow not in self.selected_lightshows:
+                self.selected_lightshows.append(lightshow)
+
+    def get_selected_lightshows(self):
+        return self.selected_lightshows
 
     def set_led_lights(self, lights_func, *args):
         func = getattr(self, lights_func)
