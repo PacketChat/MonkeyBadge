@@ -1,5 +1,6 @@
 import urequests as requests
 import config
+import gc
 
 
 class GameClient:
@@ -14,6 +15,9 @@ class GameClient:
         """
         Register the badge with the MonkeyBadge server API
         """
+        # do some garbage collections
+        gc.collect()
+
         print("Registering Badge with MonkeyBadge Server")
 
         request_url = self.baseurl + "/register"
@@ -30,6 +34,8 @@ class GameClient:
         else:
             request_body["handle"] = "unnamed_monkey"
 
+        r.close()
+
         print(f"connecting to {request_url}")
         print(f"Sending JSON Values: {request_body}")
 
@@ -40,63 +46,73 @@ class GameClient:
             return None
 
         if r.status_code == 200:
-            return r.json()
-        else:
-            # return the server's reponse or error message
-            print(f"Error registering badge: {r.text}")
+            j = r.json()
+            r.close()
+            return j
+
+        # return the server's reponse or error message
+        r.close()
+        print(f"Error registering badge: {r.text}")
 
     def checkin(self, apitoken, uuid):
         """
         Checkin with the MonkeyBadge server API
         """
+
         request_url = self.baseurl + "/checkin"
 
         request_body = {"myUUID": uuid}
 
         try:
-            r = self.secure_api_request(request_url, apitoken, request_body)
+            sc, j = self.secure_api_request(request_url, apitoken, request_body)
         except Exception as err:
             print(f"Error reaching {self.baseurl}/checkin: {err}")
             return None
 
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return None
+        if sc == 200:
+            return j
+
+        return None
 
     def konami_complete(self, token, uuid):
         request_url = self.baseurl + "/introcomplete"
 
         request_body = {"myUUID": uuid}
 
-        r = self.secure_api_request(request_url, token, request_body)
+        sc, j = self.secure_api_request(request_url, token, request_body)
 
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return None
+        if sc == 200:
+            return j
+
+        return None
 
     def friendrequest(self, token, uuid, IRID):
         request_url = self.baseurl + "/friendrequest"
         request_body = {"myUUID": uuid, "remoteIRID": str(IRID)}
 
-        r = self.secure_api_request(request_url, token, request_body)
-        print(r.text)
-        if r.status_code == 200:
-            return r.json()
-        elif r.status_code == 400:
+        sc, j = self.secure_api_request(request_url, token, request_body)
+        print(sc, j)
+        if sc == 200:
+            return j
+        elif sc == 400:
             print("Already Friends")
-        else:
-            return None
+
+        return None
 
     def secure_api_request(self, url, token, json):
         """
         Send a request to the MonkeyBadge server API
         """
+
         header = self.headers | {"X-API-Key": token}
         print(f"API Call to {url}")
         print(f"header: {header}\n body: {json}")
 
         r = requests.post(url, headers=header, json=json)
+        if r.status_code == 200:
+            j = r.json()
+            r.close()
+            return 200, j
 
-        return r
+        r.close()
+        return r.status_code(), None

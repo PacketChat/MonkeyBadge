@@ -19,6 +19,7 @@ import library.wifi as wifi
 
 from library.ota.update import OTA as OTAUpdate
 import library.ota.rollback as OTARollback
+import gc
 
 # from library.ir_rx.nec import NEC_16 as NECRx
 import config  # Import the config file
@@ -691,5 +692,8 @@ class MonkeyBadge:
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
             self.infrared.refresh_sync()
+
+            print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
+            gc.collect()
 
             time.sleep(2)
