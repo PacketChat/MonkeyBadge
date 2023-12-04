@@ -1,14 +1,10 @@
-from library.monkeybadge import MonkeyBadge
+from library.hidden_object import HiddenObject
 
 
 def main():
     """Entry point"""
-    while True:
-        badge = MonkeyBadge()
-        try:
-            badge.run()
-        except Exception as err:
-            print(f"Error running badge: {err}")
+    badge = HiddenObject()
+    badge.run()
 
 
 # Run the main function
