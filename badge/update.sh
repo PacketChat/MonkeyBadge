@@ -18,9 +18,7 @@ fi
 # mpremote $1 mip install github:peterhinch/micropython-async/v3/threadsafe
 mpremote run "$here/tools/clean_flags.py"
 mpremote cp config.py :monkeyconfig.py
-cd $badge
 mpremote cp -r library/ir_tx :
-cd $here
 mpremote cp config.py :
 mpremote cp main.py :main.py
 mpremote cp -r library/ :
