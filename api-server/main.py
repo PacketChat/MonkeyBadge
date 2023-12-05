@@ -40,7 +40,7 @@ templateJSON = """
     },
     "challenge1": {
         "complete": 0,
-        "matches": []
+        "matches": {}
     },
     "challenge2": {
         "complete": 0,
@@ -489,9 +489,16 @@ async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
                         raise HTTPException(status_code=400, detail="Already friends")
                 else:
                     if isinstance(remote_json, dict) and "badgeHandle" in remote_json:
-                        myjson["challenge1"]["matches"].append(
-                            f"{remote_json['badgeHandle']}:{remote_uuid}"
-                        )
+                        myjson["challenge1"]["matches"][str(r.remoteIRID)] = {
+                            "handle": remote_json["badgeHandle"],
+                            "uuid": remote_uuid,
+                        }
+
+                        remote_json["challenge1"]["matches"][str(myjson["IR_ID"])] = {
+                            "handle": myjson["badgeHandle"],
+                            "uuid": r.myUUID,
+                        }
+
                         # is Challenge 1 complete? if so, set current_challenge to challenge2
                         # and set challenge1 complete to 1
                         if myjson["current_challenge"] == "challenge1":
@@ -499,6 +506,12 @@ async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
                                 myjson["challenge1"]["complete"] = 1
                                 myjson["current_challenge"] = "challenge2"
 
+                        if remote_json["current_challenge"] == "challenge1":
+                            if len(remote_json["challenge1"]["matches"]) >= 5:
+                                remote_json["challenge1"]["complete"] = 1
+                                remote_json["current_challenge"] = "challenge2"
+
+                        await client.json.set(remote_uuid, ".", remote_json)
                         await client.json.set(r.myUUID, ".", myjson)
                         return myjson
                     else:
