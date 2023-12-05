@@ -133,6 +133,10 @@ class IR:
         """Set my IR identifier"""
         self.self_addr = addr
 
+    def monkey_broadcast(self, monkey_id):
+        """I'm a monkey, better tell people"""
+        self.tx.transmit(monkey_id, config.IR_OPCODES["MONKEY"].code)
+
     def send_discover(self):
         """Sends a discover packet"""
         data = [config.IR_OPCODES["DISCOVER"].code]

@@ -38,6 +38,7 @@ class MonkeyBadge:
         """
         # Wifi Init
         self.wlan = network.WLAN(network.STA_IF)
+        self.enable_wifi()
 
         # Setup button handler
         self.button_handler = ButtonHandler(
@@ -121,6 +122,11 @@ class MonkeyBadge:
         )
         adc = ADC(config.ADC_PIN)
         adc.atten(ADC.ATTN_11DB)
+
+        # monkey stuff
+        self.monkey_mode = False
+        self.monkey_id = None
+        self.last_monkey = 0
 
         # Menu Definitions
         self.main_menu = Menu([], title="Main")
@@ -586,6 +592,14 @@ class MonkeyBadge:
             self.challenge2 = j["challenge2"]
             self.challenge3 = j["challenge3"]
             self.current_challenge = j["current_challenge"]
+
+            if "monkey_id" in j and not self.monkey_mode:
+                self.monkey_mode = True
+                self.monkey_id = j["monkey_id"]
+            if self.monkey_mode and j.get("turn_off_monkey_mode"):
+                self.monkey_mode = False
+                self.monkey_id = None
+
         else:
             print("No state to load")
 
@@ -751,6 +765,13 @@ class MonkeyBadge:
             if self.display.refresh(now):
                 self.button_handler.enable_buttons()
             self.infrared.refresh_sync()
+
+            if (
+                self.monkey_mode
+                and time.ticks_diff(now, self.last_monkey) >= config.MONKEY_PERIOD
+            ):
+                self.infrared.monkey_broadcast(self.monkey_id)
+                self.last_monkey = now
 
             print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
