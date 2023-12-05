@@ -372,7 +372,7 @@ class Konami:
 def main():
     """Entry function"""
     np = neopixel.NeoPixel(machine.Pin(18), 7)
-    print("starting konami mode")
+    print("starting intro mode")
     k = Konami()
     while True:
         do_heartbeat(np)

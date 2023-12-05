@@ -21,7 +21,7 @@ from library.ota.update import OTA as OTAUpdate
 import library.ota.rollback as OTARollback
 import gc
 
-# from library.ir_rx.nec import NEC_16 as NECRx
+# from library.ir_rx.nec import NEC_16 as NECRxafd
 import config  # Import the config file
 import re
 
@@ -59,7 +59,7 @@ class MonkeyBadge:
         self.db = dbtree()
 
         self.gameclient = GameClient(__version__)
-        self.last_checkin = -60000
+        self.last_checkin = -61000
 
         # Display Init
         self.display = DisplayHandler(
@@ -636,12 +636,16 @@ class MonkeyBadge:
         else:
             print("No state to load")
 
-    def register(self):
+    def register(self, apitoken=None):
         request_body = {
             "handle": self.handle,
             "key": self.registration_key,
             "myUUID": self.badge_uuid,
+            "token": "",
         }
+
+        if apitoken:
+            request_body["token"] = apitoken
 
         r = self.gameclient.reg_request(request_body)
 
@@ -689,14 +693,18 @@ class MonkeyBadge:
             self.register()
         else:
             print("checking in badge")
-            r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
-            if r:
+            sc, r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
+            if sc == 200 and r:
                 self.save_gamestate(r)
                 self.load_gamestate(r)
                 print("Badge successfully checked in")
-
+            elif sc == 404:
+                # badge doesn't exist on the server, but the API token does.
+                # This means the server was reset, and we need to re-register.
+                print("Checkin failed, badge missing from server, re-registering")
+                self.register(apitoken=self.apitoken)
             else:
-                print("Badge checkin failed")
+                print(f"Badge checkin failed server returned: {sc}")
         # time.sleep_ms(config.CHECKIN_PERIOD * 1000)
 
     @if_ir
@@ -729,9 +737,13 @@ class MonkeyBadge:
                     print(f"emote {sender} {extra}")
                 elif opcode == "HIDDEN_OBJECT":
                     # TODO Hidden object handling here
+                    # sender is id of badge
+
                     print("Found hidden object!")
                 elif opcode == "MONKEY" and not self.monkey_mode:
                     # TODO Monkey handling here
+                    # sender is id of monkey
+
                     print("Found monkey!")
 
     def initialize_badge(self):
@@ -813,7 +825,7 @@ class MonkeyBadge:
                 self.infrared.monkey_broadcast(self.monkey_id)
                 self.last_monkey = now
 
-            print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
+            # print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
 
             time.sleep(1)
