@@ -121,10 +121,17 @@ class DisplayHandler:
         self._update_status()
 
     def _body_from(self, i):
+        milen = len(self.menu_items)
         display_items = self.menu_items[i : i + 7]
         new_index = self.menu_index - i
         for j, item in enumerate(display_items):
-            text = "{} {}".format(">" if j == new_index else " ", item)
+            trail = ""
+            if j == 0 and i != 0:
+                trail = "^"
+            elif j == 6 and i != milen - 7:
+                trail = "v"
+
+            text = "{} {:<13}{}".format(">" if j == new_index else " ", item, trail)
             self.body.text(text, 0, 8 * j, 1)
 
     def _update_status(self):
