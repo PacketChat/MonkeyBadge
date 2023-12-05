@@ -147,10 +147,9 @@ class IR:
         data = [config.IR_OPCODES["HERE"].code]
         return self.send(data)
 
-    def send_emote(self, dst, emote):
+    def send_emote(self, emote):
         """Stretch goal: send an emote"""
         data = [config.IR_OPCODES["EMOTE"].code, emote]
-        data.extend(dst.to_bytes(2, "big"))
         self.send(data)
 
     def send_resp_pair(self, dst):

@@ -134,6 +134,7 @@ class MonkeyBadge:
         self.settings_menu = Menu([], title="Settings", parent=self.main_menu)
         self.lightshow_menu = Menu([], title="LED Demos", parent=self.main_menu)
         self.social_menu = Menu([], title="Social", parent=self.main_menu)
+        self.emote_menu = Menu([], title="Emote", parent=self.social_menu)
         self.about_menu = Menu([], title="About", parent=self.main_menu)
         self.oled_brightness_menu = Menu(
             [], title="OLED Brightness", parent=self.settings_menu
@@ -221,7 +222,18 @@ class MonkeyBadge:
                 MenuItem("Match Send", self.initiate_pair),
                 MenuItem("Match Recv", self.pairing_mode),
                 MenuItem("Friends List", self.display_friends),
+                MenuItem("Emote", submenu=self.emote_menu),
             ]
+        )
+
+        def _emote(code):
+            def _f():
+                self.emote(code)
+
+            return _f
+
+        self.emote_menu.items.extend(
+            [MenuItem(v, _emote(k)) for k, v in config.EMOTES.items()]
         )
         self.radio_menu.items.extend(
             [
@@ -456,6 +468,9 @@ class MonkeyBadge:
     def display_friends(self):
         print(self.friends)
 
+    def emote(self, code):
+        self.infrared.send_emote(code)
+
     def select_log(self):
         lmenu = Menu([], "Log", parent=self.current_menu)
         lmenu.items.extend([MenuItem(f"{log}") for log in self.log])
@@ -682,17 +697,20 @@ class MonkeyBadge:
                 elif opcode == "HERE":
                     print(f"HERE pair: {sender}")
                     self.log = f"HERE: {sender}"
-                    self.show_timed_message(f"HERE {sender}")
                     self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "INIT_PAIR":
                     print(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
-                    self.show_timed_message(f"PREQ {sender}")
                     self.infrared.send_resp_pair(sender)
                     self._calls_queue[f"friendrequest_{sender}"] = (
                         self.friendrequest,
                         [sender],
                     )
+                elif opcode == "EMOTE":
+                    emote = extra[0]
+                    self.seen_badges[sender] = time.ticks_ms()
+                    self.show_timed_message(["", config.EMOTES[emote], f"  -{sender}"])
+                    print(f"emote {sender} {extra}")
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
