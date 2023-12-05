@@ -91,6 +91,7 @@ class Register(BaseModel):
     myUUID: str
     key: str
     handle: str
+    token: str
 
 
 class UUID_ObjectID(BaseModel):
@@ -274,20 +275,29 @@ async def register(r: Register):
         if irid == "":
             raise HTTPException(status_code=500, detail="Unable to create IRID")
 
-        j["token"] = new_token
         j["badgeHandle"] = r.handle
         j["IR_ID"] = irid
+
+        # get the list of apikeys from redis
         apikeys = await client.lrange("badge_apikeys", 0, -1)
 
-        # search for badge_id in bytes format
-        for i in apikeys:
-            if i.decode() is new_token:
-                raise HTTPException(status_code=500, detail="Duplicate token error")
+        # if we have r.token and it's in redis, then don't write it.
+        if r.token:
+            if r.token.encode() in apikeys:
+                j["token"] = r.token
+                await client.json.set(f"{r.myUUID}", ".", j)
+                return j
 
-        # if api_key isn't in apikeys - then add it
-        await client.rpush("badge_apikeys", [new_token])
+        if new_token.encode() in apikeys:
+            raise HTTPException(status_code=500, detail="Duplicate token error")
+        else:
+            await client.rpush("badge_apikeys", [new_token])
+            # write state to the database
+            j["token"] = new_token
+
         await client.json.set(f"{r.myUUID}", ".", j)
 
+        # return current state
         return j
 
     else:
@@ -311,7 +321,7 @@ async def checkIn(r: OnlyUUID, api_key: str = Security(get_api_key)):
 
     if isinstance(j, dict) and "token" in j:
         if not j["token"] == api_key:
-            raise HTTPException(status_code=404, detail="Badge not found")
+            raise HTTPException(status_code=404, detail="Authentication Failed.")
         else:
             if check_intro_started():
                 if isinstance(j, dict) and "intro" in j:

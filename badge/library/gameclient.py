@@ -49,10 +49,10 @@ class GameClient:
             j = r.json()
             r.close()
             return j
-
-        # return the server's reponse or error message
-        r.close()
-        print(f"Error registering badge: {r.text}")
+        else:
+            print(f"Error Registering badge: {r.text}")
+            r.close()
+            return None
 
     def checkin(self, apitoken, uuid):
         """
@@ -63,16 +63,16 @@ class GameClient:
 
         request_body = {"myUUID": uuid}
 
-        try:
-            sc, j = self.secure_api_request(request_url, apitoken, request_body)
-        except Exception as err:
-            print(f"Error reaching {self.baseurl}/checkin: {err}")
-            return None
+        sc, j = self.secure_api_request(request_url, apitoken, request_body)
 
-        if sc == 200:
-            return j
+        print(f"Checkin returned {sc}, {j}")
+        if sc == 404:
+            return 404, None
+        elif sc == 200:
+            return 200, j
 
-        return None
+        print(f"Error reaching {self.baseurl}/checkin.")
+        return 500, None
 
     def konami_complete(self, token, uuid):
         request_url = self.baseurl + "/introcomplete"
@@ -91,7 +91,7 @@ class GameClient:
         request_body = {"myUUID": uuid, "remoteIRID": str(IRID)}
 
         sc, j = self.secure_api_request(request_url, token, request_body)
-
+        print(f"Friend Request returned {sc}, {j}")
         if sc == 200:
             return j
         elif sc == 400:
@@ -109,10 +109,11 @@ class GameClient:
         print(f"header: {header}\n body: {json}")
 
         r = requests.post(url, headers=header, json=json)
-        if r.status_code == 200:
+        sc = r.status_code
+        if sc == 200:
             j = r.json()
             r.close()
-            return 200, j
+            return sc, j
 
         r.close()
-        return r.status_code(), None
+        return sc, None
