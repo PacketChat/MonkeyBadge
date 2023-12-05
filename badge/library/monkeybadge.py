@@ -461,12 +461,28 @@ class MonkeyBadge:
             self.display.show_timed_message(["Failed to", "init", "pairing"])
 
     def pairing_mode(self):
+        if not self.infrared.pairing:
+            self.show_timed_message(["  pairing", "      not", "  enabled"])
+            return
         self.infrared.pairing_mode = True
         self.infrared.end_pairing_mode = time.ticks_ms() + 10000
         self.show_timed_message(["Waiting for", "new friends"], 10000)
 
     def display_friends(self):
         print(self.friends)
+        fmenu = Menu([], "Friends", parent=self.current_menu)
+        for irid, info in self.friends.items():
+            tmenu = Menu([], f"{info['handle']}", parent=fmenu)
+            fmenu.items.append(
+                MenuItem(
+                    f"{info['handle']}:",
+                    submenu=tmenu,
+                )
+            )
+            tmenu.items.extend(
+                [MenuItem(info["uuid"].replace("-", "")), MenuItem(irid)]
+            )
+        return fmenu
 
     def emote(self, code):
         self.infrared.send_emote(code)
@@ -571,10 +587,11 @@ class MonkeyBadge:
                 self.challenge_menu.items.append(
                     MenuItem("Intro Complete", self.donothing)
                 )
+                self.infrared.enable_pairing()
             self.intro = j["intro"]
 
             # if the player completed challenge 1, tell them, and do any needful
-            if self.current_challenge != j["current_challenge"]:
+            if self.current_challenge != j["current_challenge"] and payload:
                 if j["current_challenge"] == "challenge1":
                     self.show_timed_message([" Intro", "  Complete!"])
 
@@ -604,6 +621,7 @@ class MonkeyBadge:
                     )
 
             self.challenge1 = j["challenge1"]
+            self.friends = j["challenge1"]["matches"]
             self.challenge2 = j["challenge2"]
             self.challenge3 = j["challenge3"]
             self.current_challenge = j["current_challenge"]
@@ -700,11 +718,11 @@ class MonkeyBadge:
                 elif opcode == "INIT_PAIR":
                     print(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
-                    self.infrared.send_resp_pair(sender)
-                    self._calls_queue[f"friendrequest_{sender}"] = (
-                        self.friendrequest,
-                        [sender],
-                    )
+                    if sender not in self.friends:
+                        self._calls_queue[f"friendrequest_{sender}"] = (
+                            self.friendrequest,
+                            [sender],
+                        )
                 elif opcode == "EMOTE":
                     emote = extra[0]
                     self.show_timed_message(["", config.EMOTES[emote], f"  -{sender}"])
