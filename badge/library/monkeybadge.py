@@ -240,13 +240,11 @@ class MonkeyBadge:
 
             return _f
 
-        self.lightshow_menu.items.extend(
-            [
-                MenuItem("popcorn", _lightshow("do_popcorn_effect")),
-                MenuItem("roll call", _lightshow("do_monkey_roll_call")),
-                MenuItem("heartbeat", _lightshow("do_heartbeat")),
-            ]
-        )
+        # Populate the light show menu items from the dictionary:
+        for i in self.leds.selected_lightshows:
+            desc = self.leds.lightshow_dict[i]
+            self.lightshow_menu.items.append(MenuItem(desc, _lightshow(i)))
+
         self.oled_brightness_menu.items.extend(
             [
                 MenuItem("Low", lambda: self.set_oled_contrast_mode("low")),
@@ -757,4 +755,4 @@ class MonkeyBadge:
             print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
 
-            time.sleep(2)
+            time.sleep(1)
