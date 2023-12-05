@@ -91,9 +91,6 @@ class LEDHandler:
             if random_key not in self.selected_lightshows:
                 self.selected_lightshows.append(random_key)
 
-    def get_selected_lightshows(self):
-        return self.selected_lightshows
-
     def set_led_lights(self, lights_func, *args):
         func = getattr(self, lights_func)
         if self.current_show.locked():

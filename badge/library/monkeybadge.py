@@ -243,7 +243,7 @@ class MonkeyBadge:
         # Populate the light show menu items from the dictionary:
         for i in self.leds.selected_lightshows:
             desc = self.leds.lightshow_dict[i]
-            self.lightshow_menu.items.extend([MenuItem(desc, _lightshow(i))])
+            self.lightshow_menu.items.append(MenuItem(desc, _lightshow(i)))
 
         self.oled_brightness_menu.items.extend(
             [
