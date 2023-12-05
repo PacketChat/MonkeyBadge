@@ -95,11 +95,33 @@ IR_OPCODES = {
     "INIT_PAIR": Opcode(3, 0),
     "RESP_PAIR": Opcode(4, 2),
     "ACK_RESP": Opcode(5, 2),
-    "EMOTE": Opcode(6, 3),
+    "EMOTE": Opcode(6, 1),
     "MONKEY": Opcode(7, 2),
     "HIDDEN_OBJECT": Opcode(8, 2),
 }
 REV_IR_OPCODES = {val.code: key for key, val in IR_OPCODES.items()}
+
+EMOTES = {
+    1: "lol",
+    2: "lmao",
+    3: "gtfo",
+    4: "rtfm",
+    5: "tldr",
+    6: "RNGesus",
+    7: "rofl",
+    8: "brb",
+    9: "stfu",
+    10: "wtf",
+    11: "ffs",
+    12: "smh",
+    13: "smdh",
+    14: "ifykyk",
+    15: "omg",
+    16: "uwu",
+    17: "skill issue",
+    18: "pspsps",
+}
+
 
 IR_TX_DELAY = 175  # delay between tx pulses in ms
 # messages received after this much delay (in ms) become a new message
