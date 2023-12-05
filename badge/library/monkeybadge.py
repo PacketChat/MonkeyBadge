@@ -689,15 +689,14 @@ class MonkeyBadge:
         if self.infrared.msgs:
             while self.infrared.msgs:
                 opcode, sender, extra = self.infrared.msgs.pop()
+                self.seen_badges[sender] = time.ticks_ms()
                 if opcode == "DISCOVER":
                     print(f"DISCOVER pair: {sender}")
                     self.log = f"DISC: {sender}"
                     self.infrared.send_here()
-                    self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "HERE":
                     print(f"HERE pair: {sender}")
                     self.log = f"HERE: {sender}"
-                    self.seen_badges[sender] = time.ticks_ms()
                 elif opcode == "INIT_PAIR":
                     print(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
@@ -708,7 +707,6 @@ class MonkeyBadge:
                     )
                 elif opcode == "EMOTE":
                     emote = extra[0]
-                    self.seen_badges[sender] = time.ticks_ms()
                     self.show_timed_message(["", config.EMOTES[emote], f"  -{sender}"])
                     print(f"emote {sender} {extra}")
                 elif opcode == "HIDDEN_OBJECT":
