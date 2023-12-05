@@ -38,6 +38,7 @@ class MonkeyBadge:
         """
         # Wifi Init
         self.wlan = network.WLAN(network.STA_IF)
+        self.enable_wifi()
 
         # Setup button handler
         self.button_handler = ButtonHandler(
