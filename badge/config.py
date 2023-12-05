@@ -97,8 +97,8 @@ IR_OPCODES = {
     "RESP_PAIR": Opcode(4, 2),
     "ACK_RESP": Opcode(5, 2),
     "EMOTE": Opcode(6, 1),
-    "MONKEY": Opcode(7, 2),
-    "HIDDEN_OBJECT": Opcode(8, 2),
+    "MONKEY": Opcode(7, 0),
+    "HIDDEN_OBJECT": Opcode(8, 0),
 }
 REV_IR_OPCODES = {val.code: key for key, val in IR_OPCODES.items()}
 
