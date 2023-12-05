@@ -694,7 +694,10 @@ class MonkeyBadge:
                     )
                 elif opcode == "EMOTE":
                     emote = extra[0]
-                    self.show_timed_message("", config.EMOTES[emote], f"    - {sender}")
+                    self.seen_badges[sender] = time.ticks_ms()
+                    self.show_timed_message(
+                        ["", config.EMOTES[emote], f"  -{sender}"]
+                    )
                     print(f"emote {sender} {extra}")
 
     def initialize_badge(self):
