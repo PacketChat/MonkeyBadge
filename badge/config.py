@@ -51,8 +51,8 @@ UPDATE_URL = "https://update.kafka.tel/firmware/update.json"
 
 # badge config
 REG_KEY = "7bc78281-2036-41b2-8d98-fc23ec504e9a"
-CHECKIN_PERIOD = 6000
 MONKEY_PERIOD = 5000
+CHECKIN_PERIOD = 60000
 BUTTON_PINS = [4, 14, 15, 13]
 BUTTON_PIN_DESCRIPTIONS = [
     "left up",
