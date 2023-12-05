@@ -711,6 +711,12 @@ class MonkeyBadge:
                     self.seen_badges[sender] = time.ticks_ms()
                     self.show_timed_message(["", config.EMOTES[emote], f"  -{sender}"])
                     print(f"emote {sender} {extra}")
+                elif opcode == "HIDDEN_OBJECT":
+                    # TODO Hidden object handling here
+                    print("Found hidden object!")
+                elif opcode == "MONKEY" and not self.monkey_mode:
+                    # TODO Monkey handling here
+                    print("Found monkey!")
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
