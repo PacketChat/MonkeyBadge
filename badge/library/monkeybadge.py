@@ -594,7 +594,7 @@ class MonkeyBadge:
             self.challenge3 = j["challenge3"]
             self.current_challenge = j["current_challenge"]
 
-            if 'monkey_id' in j and not self.monkey_mode:
+            if "monkey_id" in j and not self.monkey_mode:
                 self.monkey_mode = True
                 self.monkey_id = j["monkey_id"]
             if self.monkey_mode and j.get("turn_off_monkey_mode"):
