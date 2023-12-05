@@ -96,7 +96,10 @@ class IR:
         data, addr, _ = args
         print("ir recv", data, addr)
         # don't do anything if I sent this packet
-        if addr == self.self_addr:
+        if addr == self.self_addr and data not in [
+            config.IR_OPCODES["MONKEY"],
+            config.IR_OPCODES["HIDDEN_OBJECT"],
+        ]:
             return
         try:
             self.partials[addr].append(data)
