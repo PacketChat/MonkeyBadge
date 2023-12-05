@@ -692,10 +692,10 @@ class MonkeyBadge:
                         self.friendrequest,
                         [sender],
                     )
-                elif opcode == 'EMOTE':
+                elif opcode == "EMOTE":
                     emote = extra[0]
-                    self.show_timed_message(config.EMOTES[emote])
-                    print(f'emote {sender} {extra}')
+                    self.show_timed_message("", config.EMOTES[emote], f"    - {sender}")
+                    print(f"emote {sender} {extra}")
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""

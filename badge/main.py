@@ -6,6 +6,7 @@ def main():
     badge = MonkeyBadge()
     badge.run()
 
+
 # Run the main function
 if __name__ == "__main__":
     print("ENTRY")
