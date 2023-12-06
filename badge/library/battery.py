@@ -32,13 +32,4 @@ class Meter:
         # Ensure the percentage does not exceed 100%:
         percentage = min(percentage, 100)
 
-        # Create the power bar representation:
-        num_filled = int(self.power_bar_length * (percentage / 100))
-        num_empty = self.power_bar_length - num_filled
-        power_bar = "*" * num_filled + "-" * num_empty
-
-        # Print the results:
-        print("Battery Percentage: {:.2f}%".format(percentage))
-        print("Power Bar: [{}]".format(power_bar))
-
-        return "{:.2f}%".format(percentage)
+        return "{:.2f}".format(percentage)

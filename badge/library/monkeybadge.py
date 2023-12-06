@@ -377,7 +377,7 @@ class MonkeyBadge:
 
     def battery_check(self):
         reading = self.battery_meter.info()
-        self.show_timed_message(reading)
+        self.show_timed_message(reading + "%")
 
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
@@ -824,6 +824,15 @@ class MonkeyBadge:
             ):
                 self.infrared.monkey_broadcast(self.monkey_id)
                 self.last_monkey = now
+
+            # Store the power level:
+            power_reading = self.battery_meter.info().split(".")
+            whole_integer = int(power_reading[0])
+
+            # Check the battery value and if it is lower or equal to the
+            # MIN_POWER_READING, display a warning to charnge now:
+            if whole_integer <= config.MIN_POWER_READING:
+                self.display.show_timed_message("Charge Now!")
 
             # print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
