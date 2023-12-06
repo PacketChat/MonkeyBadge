@@ -23,10 +23,9 @@ uber3uuid = 52321
 uber4uuid = 65001
 uber5uuid = 38913
 
-cansuuid = 37634
-micuuid = 31583
-shadesuuid = 51799
+monkeys = {"cansuuid": 37634, "micuuid": 31583, "shadesuuid": 51799}
 
+ADMINKEY = "THISISADMINKEY"
 
 templateJSON = """
 {
@@ -80,6 +79,13 @@ client = coredis.Redis(host=redishost, port=int(redisport))
 
 class Admin(BaseModel):
     key: str
+
+
+class MonkeyMode(BaseModel):
+    key: str
+    uuid: str
+    objectid: int
+    status: str
 
 
 class Handle(BaseModel):
@@ -335,22 +341,6 @@ async def checkIn(r: OnlyUUID, api_key: str = Security(get_api_key)):
                 return j
 
 
-@app.post("/start_the_intro")
-async def startintro(r: Admin):
-    """
-    POST request with key = "ADMINSONLY"
-    returns "intro started" if successful
-    returns 404 if key is invalid
-    """
-    if r.key == "ADMINSONLY":
-        f = open("intro_started", "w")
-        f.write("intro started")
-        f.close()
-        return "intro started"
-    else:
-        raise HTTPException(status_code=404)
-
-
 @app.post("/deletebadge")
 async def deletebadge(r: Register, api_key: str = Security(get_api_key)):
     """
@@ -431,11 +421,11 @@ async def monkeysee(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
             raise HTTPException(status_code=404, detail="Badge not found")
 
         if r.objectid:
-            if r.objectid == cansuuid:
+            if r.objectid == monkeys["cansuuid"]:
                 j["challenge3"]["interact_cans"] = 1
-            elif r.objectid == micuuid:
+            elif r.objectid == monkeys["micuuid"]:
                 j["challenge3"]["interact_mic"] = 1
-            elif r.objectid == shadesuuid:
+            elif r.objectid == monkeys["shadesuuid"]:
                 j["challenge3"]["interact_shades"] = 1
             else:
                 raise HTTPException(status_code=404, detail="Unknown Monkey")
@@ -532,6 +522,62 @@ async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
             raise HTTPException(status_code=404, detail="Remote Badge not found")
     else:
         raise HTTPException(status_code=404, detail="Remote IRID not found")
+
+
+# ADMIN Requests
+
+
+@app.post("/start_the_intro")
+async def startintro(r: Admin):
+    """
+    POST request with ADMINKEY
+    returns "intro started" if successful
+    returns 404 if key is invalid
+    """
+    if r.key == ADMINKEY:
+        f = open("intro_started", "w")
+        f.write("intro started")
+        f.close()
+        return "intro started"
+    else:
+        raise HTTPException(status_code=404)
+
+
+@app.post("/monkeymode")
+async def monkeymode(r: MonkeyMode):
+    """
+    POST request with ADMINKEY
+    returns "intro started" if successful
+    returns 404 if key is invalid
+    """
+    if r.key != ADMINKEY:
+        print("wrong admin key")
+        raise HTTPException(status_code=404)
+
+    if r.objectid not in monkeys.values():
+        print("unknown monkey")
+        raise HTTPException(status_code=404)
+
+    if not r.status:
+        print("status is missing")
+        raise HTTPException(status_code=404)
+
+    j = await client.json.get(r.uuid, ".")
+
+    if not j or not r.key:
+        print("badge not found")
+        raise HTTPException(status_code=404)
+
+    if isinstance(j, dict):
+        if r.status == "on":
+            j["monkey_id"] = r.objectid
+            print(f"Set badge: {r.uuid} to monkey mode: {r.objectid}")
+        if r.status == "off":
+            del j["monkey_id"]
+        await client.json.set(r.uuid, ".", j)
+        return j
+    else:
+        raise HTTPException(status_code=404)
 
 
 if __name__ == "__main__":
