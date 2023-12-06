@@ -1,6 +1,7 @@
 from machine import Pin, ADC
 import config
 
+
 class Meter:
     def __init__(
         self,
