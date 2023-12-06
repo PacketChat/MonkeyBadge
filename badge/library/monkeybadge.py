@@ -738,13 +738,33 @@ class MonkeyBadge:
                 elif opcode == "HIDDEN_OBJECT":
                     # TODO Hidden object handling here
                     # sender is id of badge
-
-                    print("Found hidden object!")
+                    print(f"Found hidden object: {sender}!")
+                    if self.current_challenge == "challenge2":
+                        sc, j = self.gameclient.hiddenobject(
+                            self.apitoken, self.badge_uuid, sender
+                        )
+                        if j:
+                            self.save_gamestate(j)
+                            self.load_gamestate(j)
+                        if sc == 208:
+                            print(f"Already seen object {j}.")
+                        else:
+                            print("failed to pair with hidden object")
                 elif opcode == "MONKEY" and not self.monkey_mode:
                     # TODO Monkey handling here
                     # sender is id of monkey
-
-                    print("Found monkey!")
+                    print(f"Found monkey {sender}")
+                    if self.current_challenge == "challenge3":
+                        sc, j = self.gameclient.monkeysee(
+                            self.apitoken, self.badge_uuid, sender
+                        )
+                        if j and sc == 200:
+                            self.save_gamestate(j)
+                            self.load_gamestate(j)
+                        if sc == 208:
+                            print(f"Already seen monkey {j}.")
+                        else:
+                            print(f"failed to pair with monkey badge: {sc}")
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
