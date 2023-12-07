@@ -21,7 +21,7 @@ def scale_color(rgb, brightness_factor):
 
 # Classes:
 class NeoPixelLight:
-    def __init__(self, pin, num_pixels, brightness=1.0):
+    def __init__(self, pin, num_pixels, brightness=0.8):
         """
         Initialize the NeoPixel light with the given pin and number of pixels.
         Accounts for the ability to set the brightness.
@@ -53,7 +53,8 @@ class NeoPixelLight:
 class LEDHandler:
     def __init__(self):
         """
-        Initialize the light show with a NeoPixel light. This is where you set the brightness level for the light show.
+        Initialize the light show with a NeoPixel light. This is where you set
+        the brightness level for the light show.
         """
         self.np_light = NeoPixelLight(18, 7, brightness=0.8)
         self.current_show = thread.allocate_lock()
@@ -81,12 +82,20 @@ class LEDHandler:
             "do_slot_machine_effect": "Slot Machine",
             "do_jackpot_effect": "Jackpot",
             "do_boot_sequence": "Boot Sequence",
+            "do_warm_swell": "thephreak",
+            "do_calm_red_swell": "RedBeard",
+            "do_server_room_effect": "numeral",
+            "do_diligence_show": "diligence",
+            "do_golden_sparkle_show": "temtel",
+            "do_crackerjack_surprise": "crackerjack",
+            "do_alien_abduction_show": "Paul",
+            "do_fax_effect": "Faxanadu",
         }
 
         # Initialize an empty list to store selected lightshows:
         self.selected_lightshows = []
 
-        while len(self.selected_lightshows) < 5:
+        while len(self.selected_lightshows) < 30:
             random_key = random.choice(list(self.lightshow_dict.keys()))
             if random_key not in self.selected_lightshows:
                 self.selected_lightshows.append(random_key)
@@ -178,7 +187,8 @@ class LEDHandler:
             # Pause for a smooth transition between colors:
             time.sleep_ms(speed)
 
-        self.do_all_off()  # Turn off all LEDs after cycling through the rainbow.
+        # Turn off all LEDs after cycling through the rainbow.
+        self.do_all_off()
 
     def do_fireworks_show(self):
         """Runs a fireworks show with hardcoded duration and delays."""
@@ -271,7 +281,7 @@ class LEDHandler:
 
         # Illuminate all LEDs with the specified color to simulate the "beat"
         # of the heart:
-        for i in range(7):  # Assuming 7 LEDs
+        for i in range(7):
             self.np_light.set_color(i, color)
 
         # Sleep for half the pulse duration (time the heartbeat is "on"):
@@ -524,7 +534,7 @@ class LEDHandler:
         set the duration to 7, each light will display for 1 second.
         """
         # Predefined duration:
-        duration_in_seconds = 7  # The total duration of the countdown in seconds.
+        duration_in_seconds = 7  # The total duration of the countdown.
 
         num_pixels = len(self.np_light.np)
 
@@ -533,7 +543,7 @@ class LEDHandler:
 
         # Light up all LEDs at the beginning of the countdown:
         for i in range(num_pixels):
-            self.np_light.set_color(i, (0, 100, 100))  # Color for the countdown.
+            self.np_light.set_color(i, (0, 100, 100))  # Color for countdown.
 
         # Start countdown
         for i in range(num_pixels):
@@ -650,30 +660,40 @@ class LEDHandler:
 
     def do_warm_swell(self):
         """
-        Creates a warm swell effect, where LEDs gradually brighten and then
-        fade.
+        Creates an enhanced warm swell effect with deeper shades of purple and
+        dynamic patterns.
         """
 
-        # Predefined duration, color and steps:
-        duration_s = 5  # Total duration of the swell effect in seconds.
-        swell_color = (255, 100, 0)  #  Color tuple (R, G, B) for the swell.
-        swell_steps = (
-            100  # Number of steps for the swell to reach max brightness and fade.
-        )
+        # Predefined duration of deep shades of purple:
+        duration_s = 5  # Total duration of the effect in seconds.
+        deep_purple_colors = [
+            (75, 0, 130),  # Indigo.
+            (138, 43, 226),  # Blue violet.
+            (148, 0, 211),  # Dark violet.
+            (153, 50, 204),  # Dark orchid.
+            (139, 0, 139),  # Dark magenta.
+        ]
+        swell_steps = 50  # Number of steps for the swell.
 
-        delay_time = duration_s / (2 * swell_steps)  # Adjusted for up and down
+        delay_time = duration_s / (2 * swell_steps)  # Adjusted for up and down.
 
-        # Swell up and down:
+        # Iterate over the swell steps:
         for step in range(2 * swell_steps):
             # Using a sine function for smoother transitions:
             ratio = (math.sin(math.pi * step / swell_steps) + 1) / 2
-            color = (
-                int(swell_color[0] * ratio),
-                int(swell_color[1] * ratio),
-                int(swell_color[2] * ratio),
-            )
+
+            # Apply different colors to different LEDs for a more dynamic
+            # effect:
             for i in range(7):
+                color_index = (i + step) % len(deep_purple_colors)
+                base_color = deep_purple_colors[color_index]
+                color = (
+                    int(base_color[0] * ratio),
+                    int(base_color[1] * ratio),
+                    int(base_color[2] * ratio),
+                )
                 self.np_light.set_color(i, color)
+
             time.sleep_ms(int(delay_time * 1000))
 
         # Turn off the LEDs at the end:
@@ -822,7 +842,7 @@ class LEDHandler:
             (255, 0, 0),
             (0, 255, 0),
             (0, 0, 255),
-            (255, 255, 0),
+            (100, 200, 20),
             (0, 100, 100),
             (255, 0, 255),
             (87, 8, 255),
@@ -860,9 +880,10 @@ class LEDHandler:
 
     def do_boot_sequence(self):
         """
-        Simulates a boot sequence with a warm swell effect followed by rapid blinking.
-        Each group of LEDs will swell from off to full brightness and back, then blink.
-        The first two groups stay on in a dimmed state, and the third group pauses at the dim level before turning off.
+        Simulates a boot sequence with a warm swell effect followed by rapid
+        blinking.  Each group of LEDs will swell from off to full brightness
+        and back, then blink.  The first two groups stay on in a dimmed state,
+        and the third group pauses at the dim level before turning off.
         """
 
         groups = [[0, 1], [2, 3], [4, 5, 6]]
@@ -930,4 +951,238 @@ class LEDHandler:
                 time.sleep_ms(post_swell_delay)
 
         # Ensure all LEDs are turned off at the end:
+        self.do_all_off()
+
+    def do_server_room_effect(self):
+        """
+        Simulates server room lights with random, intermittent green blinking.
+        """
+
+        # Predefined values:
+        duration_s = 10  # Total duration of the effect.
+        blink_chance = 0.2  # Chance of an LED blinking in each cycle.
+        green_color = (0, 255, 0)  # Green color for the LEDs.
+        cycle_duration_ms = 100  # Duration of each blink cycle.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            for led in range(7):
+                if random.random() < blink_chance:  # Randomly decide to blink.
+                    self.np_light.set_color(led, green_color)  # Blink on.
+                else:
+                    self.np_light.set_color(led, (0, 0, 0))  # Blink off.
+
+            # Wait for the next cycle:
+            time.sleep_ms(cycle_duration_ms)
+
+        # Turn off LEDs after light show:
+        self.do_all_off()
+
+    def do_calm_red_swell(self):
+        """
+        Simulates a calming and soothing red swell effect across all LEDs.
+        """
+
+        # Predefined values:
+        duration_s = 10  # Total duration of the effect.
+        swell_steps = 20  # Number of steps in one swell cycle.
+        red_color = (255, 0, 0)  # Pure red color.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            # Swell up:
+            for step in range(swell_steps):
+                # Calculate intensity:
+                intensity = (1 + math.sin(2 * math.pi * step / swell_steps)) / 2
+                adjusted_color = (int(red_color[0] * intensity), 0, 0)
+                for led in range(7):
+                    self.np_light.set_color(led, adjusted_color)
+                time.sleep_ms(100)
+
+            # Swell down:
+            for step in range(swell_steps, -1, -1):
+                # Calculate intensity:
+                intensity = (1 + math.sin(2 * math.pi * step / swell_steps)) / 2
+                adjusted_color = (int(red_color[0] * intensity), 0, 0)
+                for led in range(7):
+                    self.np_light.set_color(led, adjusted_color)
+                time.sleep_ms(100)
+
+        # Turn off LEDs after light show:
+        self.do_all_off()
+
+    def do_diligence_show(self):
+        """
+        Simulates a light show representing diligence with deeper shades of
+        pink.
+        """
+
+        # Define shades of pink:
+        shades_of_pink = [
+            (255, 20, 147),  # Deep pink.
+            (255, 105, 180),  # Hot pink.
+            (219, 112, 147),  # Pale violet red.
+            (199, 21, 133),  # Medium violet red.
+            (255, 0, 144),  # Rich pink.
+        ]
+
+        duration_s = 10  # Total duration of the effect.
+        step_duration_ms = 200  # Duration each LED stays illuminated in shade.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            for color in shades_of_pink:
+                for led in range(7):
+                    # Illuminate each LED methodically with the current shade
+                    # of pink:
+                    self.np_light.set_color(led, color)
+                    time.sleep_ms(step_duration_ms)
+                    # Turn off the LED before moving to the next one:
+                    self.np_light.set_color(led, (0, 0, 0))
+
+        # Turn off LEDs after light show:
+        self.do_all_off()
+
+    def do_golden_sparkle_show(self):
+        """
+        Simulates a sparkling light show using shades of yellow, resembling
+        gold to represent the outstanding accomplishment of hardware hacking.
+        """
+
+        # Define shades of yellow (Gold):
+        shades_of_yellow = [
+            (255, 255, 0),  # Yellow.
+            (255, 215, 0),  # Gold.
+            (255, 223, 0),  # Golden yellow.
+            (255, 239, 0),  # Pale gold.
+            (255, 248, 220),  # Cornsilk (pale yellow).
+        ]
+
+        duration_s = 10  # Total duration of the effect.
+        sparkle_duration_ms = 50  # Duration for each sparkle.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            # Randomly pick an LED and a shade of yellow:
+            led = random.randint(0, 6)  # 7 LEDs.
+            color = random.choice(shades_of_yellow)
+
+            # Light up the selected LED:
+            self.np_light.set_color(led, color)
+            time.sleep_ms(sparkle_duration_ms)
+
+            # Turn off the LED:
+            self.np_light.set_color(led, (0, 0, 0))
+
+        # Turn off LEDs after light show:
+        self.do_all_off()
+
+    def do_crackerjack_surprise(self):
+        """
+        Simulates a playful and surprising light show reminiscent of a Cracker
+        Jack surprise.
+        """
+
+        duration_s = 10  # Total duration of the effect.
+        colors = [
+            (255, 0, 0),  # Red.
+            (0, 255, 0),  # Green.
+            (0, 0, 255),  # Blue.
+            (255, 255, 255),  # White.
+            (255, 165, 0),  # Orange.
+        ]
+        surprise_factor = 0.3  # Probability of a surprise effect.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            # Randomly choose an effect:
+            if random.random() < surprise_factor:
+                # Surprise burst: rapid color changes:
+                for _ in range(5):  # Number of quick changes.
+                    for led in range(7):
+                        self.np_light.set_color(led, random.choice(colors))
+                    time.sleep_ms(100)  # Fast change.
+            else:
+                # Regular glow: slow transition across colors:
+                color = random.choice(colors)
+                for led in range(7):
+                    self.np_light.set_color(led, color)
+                time.sleep_ms(500)  # Slower transition.
+
+            # Randomly turn off some LEDs for a flicker effect:
+            for led in range(7):
+                if random.choice([True, False]):
+                    self.np_light.set_color(led, (0, 0, 0))
+
+        # Turn off LEDs after light show:
+        self.do_all_off()
+
+    def do_alien_abduction_show(self):
+        """
+        Simulates an alien abduction light show with eerie colors and patterns.
+        """
+
+        duration_s = 10  # Total duration of the effect.
+        abduction_color = (0, 255, 0)  # Eerie alien green.
+        flash_color = (255, 255, 255)  # Bright white for sudden flashes.
+        abduction_speed_ms = 200  # Speed of the abduction beam effect.
+        flash_duration_ms = 50  # Duration of each flash.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            # Create a beam effect moving upwards:
+            for led in range(7):
+                self.np_light.set_color(led, abduction_color)
+                time.sleep_ms(abduction_speed_ms)
+                self.np_light.set_color(led, (0, 0, 0))
+
+            # Flash effect to simulate the abduction moment:
+            for _ in range(3):  # Three quick flashes.
+                self.do_all_off()  # All LEDs off.
+                time.sleep_ms(flash_duration_ms)
+                for led in range(7):
+                    self.np_light.set_color(led, flash_color)  # All LEDs flash.
+                time.sleep_ms(flash_duration_ms)
+                self.do_all_off()  # All LEDs off again.
+
+        # Turn off LEDs after light show:
+        self.do_all_off()
+
+    def do_fax_effect(self):
+        """Simulates a light show representing a hacker who loves his wife."""
+
+        # Predefined values:
+        duration_s = 10  # Total duration of the effect.
+        colors = [(87, 8, 255), (255, 0, 255), (100, 0, 0)]
+        cycle_duration_ms = 50  # Duration of each blink cycle.
+        erratic_factor = 0.3  # Chance of an erratic color change.
+
+        end_time = time.ticks_ms() + duration_s * 1000
+
+        while time.ticks_ms() < end_time:
+            for led in range(7):  # 7 Neopixels.
+                if random.random() < erratic_factor:
+                    # Choose a random color for an erratic effect:
+                    color = random.choice(colors)
+                else:
+                    # Otherwise, use a standard color (red):
+                    color = (0, 100, 100)
+
+                self.np_light.set_color(led, color)
+
+            # Wait for the next cycle:
+            time.sleep_ms(cycle_duration_ms)
+
+            # Occasionally, turn off all LEDs for a sudden blackout effect:
+            if random.random() < 0.1:  # 10% chance of a blackout.
+                self.do_all_off()
+                time.sleep_ms(100)  # Short blackout duration.
+
+        # Turn off LEDs after light show:
         self.do_all_off()
