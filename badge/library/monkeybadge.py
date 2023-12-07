@@ -54,7 +54,10 @@ class MonkeyBadge:
 
         # radio init
         self.radio = SI470X()
-        self.radio.setVolume(1)
+        try:
+            self.radio.setVolume(config.getNVS("CFG_VOLUME", 1))
+        except Exception:
+            self.radio.setVolume(1)
 
         self.db = dbtree()
 
@@ -334,11 +337,14 @@ class MonkeyBadge:
         print(f"Radio volume set to {self.radio.volume}")
         if self.radio.getVolume() < 15:
             self.radio.setVolume(self.radio.volume + 1)
+            config.setNVS("CFG_VOLUME", self.radio.volume)
+        print(f"Radio volume set to {self.radio.volume}")
         return self.current_menu
 
     def menu_volume_down(self):
         if self.radio.volume > 0:
             self.radio.setVolume(self.radio.volume - 1)
+            config.setNVS("CFG_VOLUME", self.radio.volume)
         print(f"Radio volume set to {self.radio.volume}")
         return self.current_menu
 
@@ -381,7 +387,6 @@ class MonkeyBadge:
 
     def update_badge(self):
         print("Applying over the air (OTA) Update...")
-        # self.display.print_lines(["", "  Applying OTA", "     Update  "])
         self.show_timed_message("OTA Update")
         self.flash_badge(self.update_url)
 
