@@ -94,10 +94,34 @@ class GameClient:
         print(f"Friend Request returned {sc}, {j}")
         if sc == 200:
             return j
-        elif sc == 400:
+        elif sc == 208:
             print("Already Friends")
 
         return None
+
+    def hiddenobject(self, token, uuid, objectid):
+        request_url = self.baseurl + "/hiddenobject"
+        request_body = {"myUUID": uuid, "objectid": objectid}
+
+        sc, j = self.secure_api_request(request_url, token, request_body)
+        print(f"hiddenobject returned: {sc}, {j}")
+        if sc == 200:
+            return sc, j
+        elif sc == 208:
+            print(f"already interacted with {objectid}")
+        return sc, None
+
+    def monkeysee(self, token, uuid, monkeyid):
+        request_url = self.baseurl + "/monkeysee"
+        request_body = {"myUUID": uuid, "objectid": monkeyid}
+
+        sc, j = self.secure_api_request(request_url, token, request_body)
+        print(f"monkeysee returned {sc}, {j}")
+        if sc == 200:
+            return sc, j
+        elif sc == 208:
+            print(f"error already interacted with {monkeyid}")
+        return sc, None
 
     def secure_api_request(self, url, token, json):
         """
@@ -108,7 +132,11 @@ class GameClient:
         print(f"API Call to {url}")
         print(f"header: {header}\n body: {json}")
 
-        r = requests.post(url, headers=header, json=json)
+        try:
+            r = requests.post(url, headers=header, json=json)
+        except Exception:
+            return 500, None
+
         sc = r.status_code
         if sc == 200:
             j = r.json()

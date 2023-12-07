@@ -2,13 +2,14 @@ import json
 import os
 import random
 import secrets
-from fastapi import FastAPI, HTTPException, Security, status
+from fastapi import FastAPI, HTTPException, Security, status, Response, Request
 from fastapi.security import APIKeyHeader
 from hrid import HRID
 from pydantic import BaseModel
 import coredis
 import uvicorn
 import re
+import logging
 
 app = FastAPI()
 
@@ -59,6 +60,30 @@ templateJSON = """
     }
 }
 """
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
+@app.middleware("http")
+async def api_logging(request: Request, call_next):
+    response = await call_next(request)
+
+    response_body = b""
+    async for chunk in response.body_iterator:
+        response_body += chunk
+    log_message = {
+        "host": request.url.hostname,
+        "headers": request.headers,
+        "endpoint": request.url.path,
+        "response": response_body.decode(),
+    }
+    logger.debug(log_message)
+    return Response(
+        content=response_body,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type,
+    )
 
 
 def check_intro_started():
@@ -121,7 +146,6 @@ async def does_api_key_exist(client, api_key: str) -> bool:
     else:
         for i in apikeys:
             if i.decode() == api_key:
-                print("found api key")
                 return True
         return False
 
@@ -255,7 +279,6 @@ async def register(r: Register):
     # create a new badge in redis from the templateJSON string
 
     if r.key != registration_key:
-        print(f"Invalid Registration key: {r.key}")
         raise HTTPException(status_code=400, detail="Invalid registration key")
 
     # see if the badge_id exists in redis already
@@ -307,8 +330,7 @@ async def register(r: Register):
         return j
 
     else:
-        print(f"Badge {r.myUUID} already exists.")
-        raise HTTPException(status_code=400, detail="Badge already exists")
+        raise HTTPException(status_code=208, detail="Badge already exists")
 
 
 @app.post("/checkin")
@@ -385,14 +407,24 @@ async def hiddenobject(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
 
         if r.objectid:
             if r.objectid == uber1uuid:
+                if j["challenge2"]["status"][0] == 1:
+                    raise HTTPException(status_code=208, detail="Uber1 Already found")
                 j["challenge2"]["status"][0] = 1
             elif r.objectid == uber2uuid:
+                if j["challenge2"]["status"][1] == 1:
+                    raise HTTPException(status_code=208, detail="Uber2 Already found")
                 j["challenge2"]["status"][1] = 1
             elif r.objectid == uber3uuid:
+                if j["challenge2"]["status"][2] == 1:
+                    raise HTTPException(status_code=208, detail="Uber3 Already found")
                 j["challenge2"]["status"][2] = 1
             elif r.objectid == uber4uuid:
+                if j["challenge2"]["status"][3] == 1:
+                    raise HTTPException(status_code=208, detail="Uber4 Already found")
                 j["challenge2"]["status"][3] = 1
             elif r.objectid == uber5uuid:
+                if j["challenge2"]["status"][4] == 1:
+                    raise HTTPException(status_code=208, detail="Uber5 Already found")
                 j["challenge2"]["status"][4] = 1
             else:
                 raise HTTPException(status_code=404, detail="Object not found")
@@ -422,10 +454,23 @@ async def monkeysee(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
 
         if r.objectid:
             if r.objectid == monkeys["cansuuid"]:
+                if j["challenge3"]["interact_cans"] == 1:
+                    raise HTTPException(
+                        status_code=208, detail="Cans Already interacted"
+                    )
+
                 j["challenge3"]["interact_cans"] = 1
             elif r.objectid == monkeys["micuuid"]:
+                if j["challenge3"]["interact_mic"] == 1:
+                    raise HTTPException(
+                        status_code=208, detail="Mic Already interacted"
+                    )
                 j["challenge3"]["interact_mic"] = 1
             elif r.objectid == monkeys["shadesuuid"]:
+                if j["challenge3"]["interact_shades"] == 1:
+                    raise HTTPException(
+                        status_code=208, detail="Shades Already interacted"
+                    )
                 j["challenge3"]["interact_shades"] = 1
             else:
                 raise HTTPException(status_code=404, detail="Unknown Monkey")
@@ -486,7 +531,7 @@ async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
             if isinstance(myjson, dict) and "challenge1" in myjson:
                 for item in myjson["challenge1"]["matches"]:
                     if ":" in item and item.split(":")[1] == remote_uuid:
-                        raise HTTPException(status_code=400, detail="Already friends")
+                        raise HTTPException(status_code=208, detail="Already friends")
                 else:
                     if isinstance(remote_json, dict) and "badgeHandle" in remote_json:
                         myjson["challenge1"]["matches"][str(r.remoteIRID)] = {

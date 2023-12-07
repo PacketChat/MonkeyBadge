@@ -83,10 +83,10 @@ class IR:
         micropython.schedule(self.recv_sync, args)
 
     def _keep_message(self, opcode, _sender, _extra):
-        if opcode == "MONKEY" and not self.monkey_mode:
-            return False
-        if opcode == "HIDDEN_OBJECT" and not self.hiddren_objects:
-            return False
+        # if opcode == "MONKEY" and not self.monkey_mode:
+        #    return False
+        # if opcode == "HIDDEN_OBJECT" and not self.hiddren_objects:
+        #    return False
         if opcode == "INIT_PAIR" and not self.pairing_mode:
             print("got init pair but not in pairing mode")
             return False
