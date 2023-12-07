@@ -5,36 +5,32 @@ import config
 class Meter:
     def __init__(
         self,
-        FULLY_CHARGED_ADC_VALUE,
-        DEPLETED_ADC_VALUE,
+        POWER_BAR_LENGTH=10,
+        FULLY_CHARGED_ADC_VALUE=2404,
+        DEPLETED_ADC_VALUE=1500,
         MAX_VOLTAGE=2.4,
-        power_bar_length=10,
     ):
+        self.MAX_VOLTAGE = MAX_VOLTAGE
         self.FULLY_CHARGED_ADC_VALUE = FULLY_CHARGED_ADC_VALUE
         self.DEPLETED_ADC_VALUE = DEPLETED_ADC_VALUE
-        self.MAX_VOLTAGE = MAX_VOLTAGE
-        self.power_bar_length = power_bar_length
+        self.POWER_BAR_LENGTH = POWER_BAR_LENGTH
         self.adc = ADC(Pin(config.ADC_PIN))
 
     def info(self):
-        # Read the ADC value:
+        # Read the ADC value directly:
         adc_value = self.adc.read()
 
-        # Calculate voltage based on the provided ADC value:
-        voltage = (
-            (adc_value - self.DEPLETED_ADC_VALUE)
-            / (self.FULLY_CHARGED_ADC_VALUE - self.DEPLETED_ADC_VALUE)
-        ) * self.MAX_VOLTAGE
-
-        # Calculate percentage based on the voltage:
-        percentage = (voltage / self.MAX_VOLTAGE) * 100
-
-        # Ensure the percentage does not exceed 100%:
-        percentage = min(percentage, 100)
+        if adc_value >= 2404:
+            percentage = 100
+        elif adc_value <= 1500:
+            percentage = 0
+            print("Going to sleep...")
+        else:
+            percentage = ((adc_value - 1500) / (2404 - 1500)) * 100
 
         # Create the power bar representation:
-        num_filled = int(self.power_bar_length * (percentage / 100))
-        num_empty = self.power_bar_length - num_filled
+        num_filled = int(self.POWER_BAR_LENGTH * (percentage / 100))
+        num_empty = self.POWER_BAR_LENGTH - num_filled
         power_bar = "*" * num_filled + "-" * num_empty
 
         # Print the results:
