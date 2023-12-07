@@ -28,13 +28,4 @@ class Meter:
         else:
             percentage = ((adc_value - 1500) / (2404 - 1500)) * 100
 
-        # Create the power bar representation:
-        num_filled = int(self.POWER_BAR_LENGTH * (percentage / 100))
-        num_empty = self.POWER_BAR_LENGTH - num_filled
-        power_bar = "*" * num_filled + "-" * num_empty
-
-        # Print the results:
-        print("Battery Percentage: {:.2f}%".format(percentage))
-        print("Power Bar: [{}]".format(power_bar))
-
-        return "{:.2f}%".format(percentage)
+        return "{:.2f}".format(percentage)
