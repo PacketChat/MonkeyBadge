@@ -33,14 +33,17 @@ async def check_ota():
         pass
 
 
-print("Performing POST")
-print("Performing power on OTA check")
-asyncio.run(connect_to_wifi(config.WIFI_SSID, config.WIFI_PASSWORD))
 display = DisplayHandler(
     config.OLED_WIDTH,
     config.OLED_HEIGHT,
     config.OLED_SDA_PIN,
     config.OLED_SCL_PIN,
 )
-display.print_logo()
+
+print("Performing power on OTA check")
+display.display.fill(0)
+display.display.text("   Performing", 0, 12)
+display.display.text("   OTA Update", 0, 20)
+display.display.show()
+asyncio.run(connect_to_wifi(config.WIFI_SSID, config.WIFI_PASSWORD))
 del display
