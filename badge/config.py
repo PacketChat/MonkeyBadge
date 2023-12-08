@@ -8,6 +8,9 @@ IR_TX_PIN = 17  # SAO2 GPIO2
 
 IR_TX_DELAY = 175
 
+WIFI_SSID = "HushCon"
+WIFI_PASSWORD = "ThreeAmigos"
+
 # HIDDEN OBJECT SPECS
 HIDDEN_OBJECTS = {
     1: {"addr": 12341},
