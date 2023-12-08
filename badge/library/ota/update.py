@@ -146,9 +146,9 @@ class OTA:
             sha: str = data["sha"]
             length: int = data["length"]
             if self.check_self_sha(sha, length):
-                raise ValueError(
-                    "Remote firmware file is the same as the running firmware."
-                )
+                self.writer = None
+                print("Remote firmware file is the same as the running firmware.")
+                self.close()
             else:
                 print("Update SHA does not match running firmware.")
             if not any(firmware.startswith(s) for s in ("https:", "http:", "/")):
