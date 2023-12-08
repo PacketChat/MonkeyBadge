@@ -108,7 +108,7 @@ class MonkeyBadge:
             self.apitoken = None
 
         self.lock_radio_station = False
-        self.handle = None
+        self.handle = ""
         self.current_challenge = None
         self.challenge1 = {}
         self.challenge2 = {}
@@ -172,6 +172,10 @@ class MonkeyBadge:
         self.about_menu.items.extend(
             [
                 MenuItem("Version", self.display_menu("Version", __version__)),
+                MenuItem(
+                    "My Handle",
+                    self.showmyhandle,
+                ),
                 MenuItem("Game Status", submenu=self.challenge_menu),
                 MenuItem(
                     "Credits",
@@ -304,6 +308,10 @@ class MonkeyBadge:
         logger.addHandler(ch)
 
         return logger
+
+    def showmyhandle(self):
+        if len(self.handle) > 12:
+            self.show_timed_message(["My Handle:", self.handle[:12], self.handle[12:]])
 
     @property
     def infrared_id(self):
