@@ -408,11 +408,10 @@ class MonkeyBadge:
         # TODO: change the state of the screen to show that
         # the badge is updating and resetting
         try:
-            # print(OTAStatus.status())
             with OTAUpdate(reboot=True, verbose=verbose) as ota:
                 ota.from_json(url)
         except Exception as err:
-            self.logger.error(f"Unexpected {err=}, {type(err)=}")
+            self.logger.error(f"Skipping OTA update{err=}, {type(err)=}")
 
     def battery_check(self):
         reading = self.battery_meter.info()
@@ -443,11 +442,14 @@ class MonkeyBadge:
         # This effectively "formats" the flash
         self.logger.info("Erasing Flash...")
         os.VfsFat.mkfs(bdev)
-        self.logger.info("Erasing Non Volatile Storage (NVS)...")
-        config.eraseNVS("API_SERVER")
-        config.eraseNVS("WIFI_SSID")
-        config.eraseNVS("WIFI_PASSWORD")
-        self.logger.info("Applying Factory Firmware...")
+        print("Erasing Non Volatile Storage (NVS)...")
+        try:
+            config.eraseNVS("API_SERVER")
+            config.eraseNVS("WIFI_SSID")
+            config.eraseNVS("WIFI_PASSWORD")
+        except Exception:
+            pass
+        print("Applying Factory Firmware...")
         self.show_timed_message("Resetting")
         self.flash_badge(self.reset_url)
 
