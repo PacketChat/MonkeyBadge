@@ -860,7 +860,7 @@ class MonkeyBadge:
         self.infrared.disable()
 
     def run(self):
-        # self.leds.set_led_lights('do_boot_sequence')
+        self.leds.set_led_lights("do_boot_sequence")
         self.initialize_badge()
 
         # start the cli
