@@ -24,7 +24,6 @@ class Meter:
             percentage = 100
         elif adc_value <= 1500:
             percentage = 0
-            print("Going to sleep...")
         else:
             percentage = ((adc_value - 1500) / (2404 - 1500)) * 100
 

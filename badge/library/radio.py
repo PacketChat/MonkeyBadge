@@ -495,7 +495,7 @@ class SI470X(object):
         # convert to our band and MHZ
         result = 87.5 + frequency * 0.1
 
-        return f"{result}"
+        return result
 
     def seekUp(self):
         """

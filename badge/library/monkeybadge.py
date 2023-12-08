@@ -327,7 +327,7 @@ class MonkeyBadge:
         self.lock_radio_station = True
         self.radio.tuneFreq(freq)
 
-    def unlock_station(self, freq):
+    def unlock_station(self):
         self.lock_radio_station = False
 
     def menu_volume_up(self):
@@ -344,13 +344,23 @@ class MonkeyBadge:
 
     def menu_seek_up(self):
         if not self.lock_radio_station:
+            curr_freq = self.radio.getFreq()
             self.radio.seekUp()
+            if self.radio.getFreq() == config.LOCKED_FREQ:
+                self.radio.seekUp()
+            if self.radio.getFreq() == config.LOCKED_FREQ:
+                self.radio.tuneFreq(curr_freq)
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
     def menu_seek_down(self):
         if not self.lock_radio_station:
+            curr_freq = self.radio.getFreq()
             self.radio.seekDown()
+            if self.radio.getFreq() == config.LOCKED_FREQ:
+                self.radio.seekDown()
+            if self.radio.getFreq() == config.LOCKED_FREQ:
+                self.radio.tuneFreq(curr_freq)
             print(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
@@ -580,6 +590,7 @@ class MonkeyBadge:
             self.handle = j["badgeHandle"]
             self.apitoken = j["token"]
             self.infrared_id = j["IR_ID"]
+
             if (
                 self.intro["complete"] != j["intro"]["complete"]
                 and j["intro"]["complete"]
@@ -590,7 +601,12 @@ class MonkeyBadge:
                 self.infrared.enable_pairing()
             self.intro = j["intro"]
 
+            if self.current_challenge != j["current_challenge"]:
+                self.challenge_menu.items.append(
+                    MenuItem(f"Current Challenge: {j['current_challenge']}")
+                )
             # if the player completed challenge 1, tell them, and do any needful
+            # payload needs to be set - this means you cant progress a player manually.
             if self.current_challenge != j["current_challenge"] and payload:
                 if j["current_challenge"] == "challenge1":
                     self.show_timed_message([" Intro", "  Complete!"])
@@ -604,11 +620,11 @@ class MonkeyBadge:
                             "   important",
                             "   message",
                         ],
-                        10,
+                        2,
                     )
+
                 if j["current_challenge"] == "challenge3":
                     self.show_timed_message([" Challenge 2", "  Complete!"])
-                    self.lock_radio_station = False
 
                 if j["current_challenge"] == "winner":
                     self.show_timed_message(
@@ -625,6 +641,13 @@ class MonkeyBadge:
             self.challenge2 = j["challenge2"]
             self.challenge3 = j["challenge3"]
             self.current_challenge = j["current_challenge"]
+
+            if self.current_challenge == "challenge2":
+                # lock the radio station
+                self.lock_station(config.LOCKED_FREQ)
+
+            else:
+                self.unlock_station()
 
             if "monkey_id" in j and not self.monkey_mode:
                 self.monkey_mode = True
@@ -696,7 +719,7 @@ class MonkeyBadge:
             sc, r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
             if sc == 200 and r:
                 self.save_gamestate(r)
-                self.load_gamestate(r)
+                self.load_gamestate()
                 print("Badge successfully checked in")
             elif sc == 404:
                 # badge doesn't exist on the server, but the API token does.
@@ -798,7 +821,7 @@ class MonkeyBadge:
                     del self._calls_queue[name]
 
             # the badge is waiting to execute the next call
-            print(".", end="")
+            # print(".", end="")
             # print(f"IP: {self.wlan.ifconfig()[0]}, {self.last_checkin} {now}")
 
             if not self.wlan.isconnected():
@@ -809,10 +832,12 @@ class MonkeyBadge:
             # checkin, blocking
             if time.ticks_diff(now, self.last_checkin) >= config.CHECKIN_PERIOD:
                 try:
-                    print(".")
+                    # print(".")
                     self.checkin()
                     self.last_checkin = now
-                except Exception:
+                except Exception as err:
+                    self.last_checkin = now
+                    print(f"{err}")
                     pass
 
             # update ir status
@@ -851,8 +876,10 @@ class MonkeyBadge:
 
             # Check the battery value and if it is lower or equal to the
             # MIN_POWER_READING, display a warning to charnge now:
-            if whole_integer <= config.MIN_POWER_READING:
-                self.display.show_timed_message("Charge Now!")
+            if whole_integer != 0:
+                # print(f"Battery Level: {whole_integer}")
+                if whole_integer <= config.MIN_POWER_READING:
+                    self.display.show_timed_message("Charge Now!")
 
             # print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
