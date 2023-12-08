@@ -25,7 +25,6 @@ async def connect_to_wifi(ssid, password):
 
 
 async def check_ota():
-    # TODO: Set this to false before shipping
     try:
         with OTA(reboot=True, verbose=False) as ota:
             ota.from_json(config.UPDATE_URL)
