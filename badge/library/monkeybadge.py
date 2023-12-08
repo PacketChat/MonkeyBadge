@@ -147,10 +147,6 @@ class MonkeyBadge:
         self.oled_brightness_menu = Menu(
             [], title="OLED Brightness", parent=self.settings_menu
         )
-        self.ota_confirm_menu = Menu([], title="Confirm OTA", parent=self.settings_menu)
-        self.reset_confirm_menu = Menu(
-            [], title="Confirm Reset", parent=self.settings_menu
-        )
         self.volume_menu = Menu([], title="Volume", parent=self.radio_menu)
         self.volume_menu.items.extend(
             [
@@ -259,8 +255,8 @@ class MonkeyBadge:
             [
                 MenuItem("Battery Life", self.battery_check),
                 MenuItem("OLED Brightness", submenu=self.oled_brightness_menu),
-                MenuItem("OTA Update", submenu=self.ota_confirm_menu),
-                MenuItem("Reset Badge", submenu=self.reset_confirm_menu),
+                MenuItem("OTA Update", self.update_badge),
+                MenuItem("Reset Badge", self.reset_badge),
             ]
         )
 
@@ -280,20 +276,6 @@ class MonkeyBadge:
                 MenuItem("Low", lambda: self.set_oled_contrast_mode("low")),
                 MenuItem("Medium", lambda: self.set_oled_contrast_mode("medium")),
                 MenuItem("High", lambda: self.set_oled_contrast_mode("high")),
-            ]
-        )
-
-        self.ota_confirm_menu.items.extend(
-            [
-                MenuItem("Yes", self.update_badge),
-                MenuItem("No", lambda: self._no_was_selected()),
-            ]
-        )
-
-        self.reset_confirm_menu.items.extend(
-            [
-                MenuItem("Yes", self.reset_badge),
-                MenuItem("No", lambda: self._no_was_selected()),
             ]
         )
 
@@ -450,9 +432,6 @@ class MonkeyBadge:
         contrast_levels = {"low": 1, "medium": 80, "high": 200}
 
         self.display.set_contrast(contrast_levels[mode])
-
-    def _no_was_selected(self):
-        return self.settings_menu
 
     def reset_badge(self):
         # TODO: This needs to clear the badge in the api-server.
