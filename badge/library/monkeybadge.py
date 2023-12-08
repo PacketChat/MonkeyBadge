@@ -108,7 +108,7 @@ class MonkeyBadge:
             self.apitoken = None
 
         self.lock_radio_station = False
-        self.handle = None
+        self.handle = ""
         self.current_challenge = None
         self.challenge1 = {}
         self.challenge2 = {}
@@ -172,6 +172,10 @@ class MonkeyBadge:
         self.about_menu.items.extend(
             [
                 MenuItem("Version", self.display_menu("Version", __version__)),
+                MenuItem(
+                    "My Handle",
+                    self.showmyhandle,
+                ),
                 MenuItem("Game Status", submenu=self.challenge_menu),
                 MenuItem(
                     "Credits",
@@ -304,6 +308,10 @@ class MonkeyBadge:
         logger.addHandler(ch)
 
         return logger
+
+    def showmyhandle(self):
+        if len(self.handle) > 12:
+            self.show_timed_message(["My Handle:", self.handle[:12], self.handle[12:]])
 
     @property
     def infrared_id(self):
@@ -725,6 +733,30 @@ class MonkeyBadge:
         return False
 
     @if_wifi
+    def hiddenobjectrequest(self, sender):
+        if self.current_challenge == "challenge2":
+            sc, j = self.gameclient.hiddenobject(self.apitoken, self.badge_uuid, sender)
+            if j and sc == 200:
+                self.save_gamestate(j)
+                self.load_gamestate(j)
+            if sc == 208:
+                self.logger.debug(f"Already seen object {j}.")
+            else:
+                self.logger.debug("failed to pair with hidden object")
+
+    @if_wifi
+    def monkeyseerequest(self, sender):
+        if self.current_challenge == "challenge3":
+            sc, j = self.gameclient.monkeysee(self.apitoken, self.badge_uuid, sender)
+            if j and sc == 200:
+                self.save_gamestate(j)
+                self.load_gamestate(j)
+            if sc == 208:
+                self.logger.debug(f"Already seen monkey {j}.")
+            else:
+                self.logger.debug(f"failed to pair with monkey badge: {sc}")
+
+    @if_wifi
     def config_konami_win(self):
         """We've completed the intro challenge"""
         j = self.gameclient.konami_complete(self.apitoken, self.badge_uuid)
@@ -772,9 +804,11 @@ class MonkeyBadge:
                     self.logger.debug(f"DISCOVER pair: {sender}")
                     self.log = f"DISC: {sender}"
                     self.infrared.send_here()
+
                 elif opcode == "HERE":
                     self.logger.debug(f"HERE pair: {sender}")
                     self.log = f"HERE: {sender}"
+
                 elif opcode == "INIT_PAIR":
                     self.logger.debug(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
@@ -787,36 +821,24 @@ class MonkeyBadge:
                     emote = extra[0]
                     self.show_timed_message(["", config.EMOTES[emote], f"  -{sender}"])
                     self.logger.debug(f"emote {sender} {extra}")
+
                 elif opcode == "HIDDEN_OBJECT":
                     # TODO Hidden object handling here
                     # sender is id of badge
+                    self._calls_queue[f"hiddenobjectrequest_{sender}"] = (
+                        self.hiddenobjectrequest,
+                        [sender],
+                    )
                     self.logger.debug(f"Found hidden object: {sender}!")
-                    if self.current_challenge == "challenge2":
-                        sc, j = self.gameclient.hiddenobject(
-                            self.apitoken, self.badge_uuid, sender
-                        )
-                        if j:
-                            self.save_gamestate(j)
-                            self.load_gamestate(j)
-                        if sc == 208:
-                            self.logger.debug(f"Already seen object {j}.")
-                        else:
-                            self.logger.debug("failed to pair with hidden object")
+
                 elif opcode == "MONKEY" and not self.monkey_mode:
                     # TODO Monkey handling here
                     # sender is id of monkey
                     self.logger.debug(f"Found monkey {sender}")
-                    if self.current_challenge == "challenge3":
-                        sc, j = self.gameclient.monkeysee(
-                            self.apitoken, self.badge_uuid, sender
-                        )
-                        if j and sc == 200:
-                            self.save_gamestate(j)
-                            self.load_gamestate(j)
-                        if sc == 208:
-                            self.logger.debug(f"Already seen monkey {j}.")
-                        else:
-                            self.logger.debug(f"failed to pair with monkey badge: {sc}")
+                    self._calls_queue[f"monkeyseerequest_{sender}"] = (
+                        self.monkeyseerequest,
+                        [sender],
+                    )
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
