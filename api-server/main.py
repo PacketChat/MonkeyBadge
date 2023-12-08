@@ -529,7 +529,7 @@ async def friendrequest(r: UUID_IRID, api_key: str = Security(get_api_key)):
 
         if remote_json:
             if isinstance(myjson, dict) and "challenge1" in myjson:
-                if [str(r.remoteIRID)] in myjson["challenge1"]["matches"]:
+                if str(r.remoteIRID) in myjson["challenge1"]["matches"]:
                     raise HTTPException(status_code=208, detail="Already friends")
                 else:
                     if isinstance(remote_json, dict) and "badgeHandle" in remote_json:
