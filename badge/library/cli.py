@@ -14,7 +14,6 @@ class CLI:
             "net": "Display network information",
             "state": "Display badge state",
             "recover": "Recover badge state from server. IF you haven't done a reset.",
-            "set_wifi": "Set the wifi credentials",
         }
         if badge:
             self.token = badge.apitoken
