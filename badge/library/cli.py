@@ -1,14 +1,12 @@
 import config
 import urequests as requests
 import network
-import logging
 
 
 class CLI:
     def __init__(self, badge) -> None:
         self.cmds = {
             "help": "Display Help Menu!",
-            "debug": "Turn on/off debug self.logger mode",
             "factory_reset": "Clear the badge database and server data",
             "rename": "Change your badge handle",
             "about": "About this badge",
@@ -25,16 +23,6 @@ class CLI:
             self.version = badge.version
             self.db = badge.db
             self.badge = badge
-
-    def debug_cmd(self, arg):
-        if arg == "off":
-            self.badge.logger.setLevel(logging.ERROR)
-            print("self.logger level set to ERROR only.")
-        elif arg == "on":
-            self.badge.logger.setLevel(logging.DEBUG)
-            print("self.logger level set to DEBUG.")
-        else:
-            print("Unknown debug argument. Try 'on' or 'off'")
 
     def printhelp(self):
         print("BadgeCLI Commands:")
@@ -55,12 +43,7 @@ class CLI:
                 print("Unknown command, try 'help'")
                 return
 
-            if cmd == "debug":
-                if arg:
-                    self.debug_cmd(arg)
-                else:
-                    print("try: debug [on|off]")
-            elif cmd == "state":
+            if cmd == "state":
                 self.getbadgestate()
             elif cmd == "help":
                 self.printhelp()
