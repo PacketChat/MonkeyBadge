@@ -18,7 +18,7 @@ class GameClient:
         # do some garbage collections
         gc.collect()
 
-        print("Registering Badge with MonkeyBadge Server")
+        # print("Registering Badge with MonkeyBadge Server")
 
         request_url = self.baseurl + "/register"
 
@@ -36,8 +36,8 @@ class GameClient:
 
         r.close()
 
-        print(f"connecting to {request_url}")
-        print(f"Sending JSON Values: {request_body}")
+        # print(f"connecting to {request_url}")
+        # print(f"Sending JSON Values: {request_body}")
 
         try:
             r = requests.post(request_url, headers=self.headers, json=request_body)
@@ -86,6 +86,18 @@ class GameClient:
 
         return None
 
+    def change_handle(self, token, uuid, name):
+        request_url = self.baseurl + "/changehandle"
+
+        request_body = {"myUUID": uuid, "handle": name}
+
+        r = self.secure_api_request(request_url, token, request_body)
+
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return None
+
     def friendrequest(self, token, uuid, IRID):
         request_url = self.baseurl + "/friendrequest"
         request_body = {"myUUID": uuid, "remoteIRID": str(IRID)}
@@ -96,7 +108,7 @@ class GameClient:
             return j
         elif sc == 208:
             print("Already Friends")
-
+            pass
         return None
 
     def hiddenobject(self, token, uuid, objectid):

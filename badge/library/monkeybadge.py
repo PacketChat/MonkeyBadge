@@ -2,6 +2,7 @@ from machine import ADC
 import micropython
 import network
 import time
+import _thread
 
 import ujson as json
 
@@ -15,6 +16,7 @@ from library.battery import Meter
 from library.leds import LEDHandler
 from library.menu import Menu, MenuItem
 from library.radio import SI470X
+from library.cli import CLI
 import library.wifi as wifi
 
 from library.ota.update import OTA as OTAUpdate
@@ -24,6 +26,8 @@ import gc
 # from library.ir_rx.nec import NEC_16 as NECRxafd
 import config  # Import the config file
 import re
+
+import logging
 
 __version__ = "0.2.1"
 
@@ -36,7 +40,11 @@ class MonkeyBadge:
 
         :param uuid: The UUID of the badge
         """
+        # init logger
+
+        self.logger = self.setup_logger()
         # Wifi Init
+        self.version = __version__
         self.wlan = network.WLAN(network.STA_IF)
         self.enable_wifi()
 
@@ -84,7 +92,7 @@ class MonkeyBadge:
         self.friends = dict()
 
         # boot
-        print("Badge Booting")
+        self.logger.debug("Badge Booting")
         self.display.print_logo()
         time.sleep(1)  # I want to see the logo
 
@@ -96,7 +104,7 @@ class MonkeyBadge:
         try:
             self.apitoken = self.db.get("token")
         except KeyError:
-            print("Unable to load token: badge not registered.")
+            self.logger.debug("Unable to load token: badge not registered.")
             self.apitoken = None
 
         self.lock_radio_station = False
@@ -109,9 +117,9 @@ class MonkeyBadge:
 
         # use the mac as the UUID
         self.badge_uuid = re.sub(":", "-", str(wifi.get_mac(self.wlan)))
-        print("Badge UUID: %s" % (self.badge_uuid))
+        self.logger.debug("Badge UUID: %s" % (self.badge_uuid))
 
-        print("Confirming firmware boot success. Cancelling OTA Rollback")
+        self.logger.info("Confirming firmware boot success. Cancelling OTA Rollback")
         OTARollback.cancel()
 
         # Battery meter initialization and configuration:
@@ -271,6 +279,32 @@ class MonkeyBadge:
             ]
         )
 
+    def log_debug_off(self):
+        self.logger.setLevel(logging.ERROR)
+        print("self.logger level set to ERROR only.")
+
+    def log_debug_on(self):
+        self.logger.setLevel(logging.DEBUG)
+        print("self.logger level set to DEBUG.")
+
+    def setup_logger(self):
+        # Create a logger
+        logger = logging.getLogger("badge_logger")
+        logger.setLevel(logging.DEBUG)  # Set the logging level
+
+        # Create a console handler and set its level
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+
+        # Create a formatter and add it to the handler
+        formatter = logging.Formatter("%(levelname)s- %(message)s")
+        ch.setFormatter(formatter)
+
+        # Add the handler to the logger
+        logger.addHandler(ch)
+
+        return logger
+
     @property
     def infrared_id(self):
         return self.infrared.self_addr
@@ -331,7 +365,7 @@ class MonkeyBadge:
         self.lock_radio_station = False
 
     def menu_volume_up(self):
-        print(f"Radio volume set to {self.radio.volume}")
+        self.logger.debug(f"Radio volume set to {self.radio.volume}")
         if self.radio.getVolume() < 15:
             self.radio.setVolume(self.radio.volume + 1)
         return self.current_menu
@@ -339,7 +373,7 @@ class MonkeyBadge:
     def menu_volume_down(self):
         if self.radio.volume > 0:
             self.radio.setVolume(self.radio.volume - 1)
-        print(f"Radio volume set to {self.radio.volume}")
+        self.logger.debug(f"Radio volume set to {self.radio.volume}")
         return self.current_menu
 
     def menu_seek_up(self):
@@ -350,7 +384,7 @@ class MonkeyBadge:
                 self.radio.seekUp()
             if self.radio.getFreq() == config.LOCKED_FREQ:
                 self.radio.tuneFreq(curr_freq)
-            print(f"Radio tuned to {self.radio.getFreq()}")
+            self.logger.debug(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
     def menu_seek_down(self):
@@ -361,7 +395,7 @@ class MonkeyBadge:
                 self.radio.seekDown()
             if self.radio.getFreq() == config.LOCKED_FREQ:
                 self.radio.tuneFreq(curr_freq)
-            print(f"Radio tuned to {self.radio.getFreq()}")
+            self.logger.debug(f"Radio tuned to {self.radio.getFreq()}")
         return self.current_menu
 
     def display_freq(self):
@@ -378,20 +412,14 @@ class MonkeyBadge:
             with OTAUpdate(reboot=True, verbose=verbose) as ota:
                 ota.from_json(url)
         except Exception as err:
-            print(f"Unexpected {err=}, {type(err)=}")
-
-    #            if err == -202:
-    #                print("Unable to process update: Network Error")
-    #            else:
-    #                print("Unable to flash device %s" % (err))
+            self.logger.error(f"Unexpected {err=}, {type(err)=}")
 
     def battery_check(self):
         reading = self.battery_meter.info()
         self.show_timed_message(reading + "%")
 
     def update_badge(self):
-        print("Applying over the air (OTA) Update...")
-        # self.display.print_lines(["", "  Applying OTA", "     Update  "])
+        self.logger.info("Applying over the air (OTA) Update...")
         self.show_timed_message("OTA Update")
         self.flash_badge(self.update_url)
 
@@ -413,13 +441,13 @@ class MonkeyBadge:
 
         # MicroPython's partition table uses "vfs"
         # This effectively "formats" the flash
-        print("Erasing Flash...")
+        self.logger.info("Erasing Flash...")
         os.VfsFat.mkfs(bdev)
-        print("Erasing Non Volatile Storage (NVS)...")
+        self.logger.info("Erasing Non Volatile Storage (NVS)...")
         config.eraseNVS("API_SERVER")
         config.eraseNVS("WIFI_SSID")
         config.eraseNVS("WIFI_PASSWORD")
-        print("Applying Factory Firmware...")
+        self.logger.info("Applying Factory Firmware...")
         self.show_timed_message("Resetting")
         self.flash_badge(self.reset_url)
 
@@ -479,7 +507,7 @@ class MonkeyBadge:
         self.show_timed_message(["Waiting for", "new friends"], 10000)
 
     def display_friends(self):
-        print(self.friends)
+        self.logger.debug(self.friends)
         fmenu = Menu([], "Friends", parent=self.current_menu)
         for irid, info in self.friends.items():
             tmenu = Menu([], f"{info['handle']}", parent=fmenu)
@@ -504,7 +532,7 @@ class MonkeyBadge:
 
     def display_menu(self, name, *args):
         def _f():
-            print(name, args)
+            self.logger.debug(name, args)
             dmenu = Menu([], name, parent=self.current_menu)
             dmenu.items.extend([MenuItem(arg) for arg in args])
             return dmenu
@@ -563,21 +591,18 @@ class MonkeyBadge:
         try:
             current_state = json.loads(self.db.get("state"))
         except Exception:
-            print("Unable to load saved state: not found.")
+            self.logger.debug("Unable to load saved state: not found.")
             current_state = ""
 
-        # print(f"Current State {type(current_state)}: {current_state}")
-        # print(f"New State {type(state)}: {state}")
-
         if current_state == state:
-            print("gamestate unchanged")
+            self.logger.debug("gamestate unchanged")
         else:
             self.db.set("state", json.dumps(state))
-            print("Saved gamestate to localdb")
+            self.logger.debug("Saved gamestate to localdb")
 
     def load_gamestate(self, payload=None):
         if payload:
-            print("loading from argument")
+            self.logger.debug("loading from argument")
             j = payload
         else:
             state = self.db.get("state")
@@ -586,7 +611,7 @@ class MonkeyBadge:
             j = json.loads(state)
 
         if j:
-            print(f"loaded gamestate. irid: {self.infrared_id}")
+            self.logger.debug(f"loaded gamestate. irid: {self.infrared_id}")
             self.handle = j["badgeHandle"]
             self.apitoken = j["token"]
             self.infrared_id = j["IR_ID"]
@@ -657,7 +682,7 @@ class MonkeyBadge:
                 self.monkey_id = None
 
         else:
-            print("No state to load")
+            self.logger.error("No state to load")
 
     def register(self, apitoken=None):
         request_body = {
@@ -673,13 +698,13 @@ class MonkeyBadge:
         r = self.gameclient.reg_request(request_body)
 
         if r:
-            print("Registration successful")
+            self.logger.debug("Registration successful")
             self.apitoken = r["token"]
             self.db.set("token", self.apitoken)
             self.save_gamestate(r)
             self.load_gamestate()
         else:
-            print("registration failed")
+            self.logger.debug("registration failed")
 
     def clean_seen_badges(self, now):
         """Cleans badges we haven't seen in a while"""
@@ -690,11 +715,11 @@ class MonkeyBadge:
     @if_wifi
     def friendrequest(self, irid):
         r = self.gameclient.friendrequest(self.apitoken, self.badge_uuid, irid)
-        print(f"friend request with {irid}")
+        self.logger.debug(f"friend request with {irid}")
         if r:
             self.save_gamestate(r)
             return True
-        print(f"friend request failed: {r}")
+        self.logger.warn(f"friend request failed: {r}")
         return False
 
     @if_wifi
@@ -712,22 +737,24 @@ class MonkeyBadge:
         Checkin with the MonkeyBadge server API
         """
         if not self.apitoken:
-            print("No API token, registering badge")
+            self.logger.debug("No API token, registering badge")
             self.register()
         else:
-            print("checking in badge")
+            self.logger.debug("checking in badge")
             sc, r = self.gameclient.checkin(self.apitoken, self.badge_uuid)
             if sc == 200 and r:
                 self.save_gamestate(r)
                 self.load_gamestate()
-                print("Badge successfully checked in")
+                self.logger.debug("Badge successfully checked in")
             elif sc == 404:
                 # badge doesn't exist on the server, but the API token does.
                 # This means the server was reset, and we need to re-register.
-                print("Checkin failed, badge missing from server, re-registering")
+                self.logger.warn(
+                    "Checkin failed, badge missing from server, re-registering"
+                )
                 self.register(apitoken=self.apitoken)
             else:
-                print(f"Badge checkin failed server returned: {sc}")
+                self.logger.error(f"Badge checkin failed server returned: {sc}")
         # time.sleep_ms(config.CHECKIN_PERIOD * 1000)
 
     @if_ir
@@ -740,14 +767,14 @@ class MonkeyBadge:
                 opcode, sender, extra = self.infrared.msgs.pop()
                 self.seen_badges[sender] = time.ticks_ms()
                 if opcode == "DISCOVER":
-                    print(f"DISCOVER pair: {sender}")
+                    self.logger.debug(f"DISCOVER pair: {sender}")
                     self.log = f"DISC: {sender}"
                     self.infrared.send_here()
                 elif opcode == "HERE":
-                    print(f"HERE pair: {sender}")
+                    self.logger.debug(f"HERE pair: {sender}")
                     self.log = f"HERE: {sender}"
                 elif opcode == "INIT_PAIR":
-                    print(f"init pair: {sender}")
+                    self.logger.debug(f"init pair: {sender}")
                     self.log = f"PAIR: {sender}"
                     if sender not in self.friends:
                         self._calls_queue[f"friendrequest_{sender}"] = (
@@ -757,11 +784,11 @@ class MonkeyBadge:
                 elif opcode == "EMOTE":
                     emote = extra[0]
                     self.show_timed_message(["", config.EMOTES[emote], f"  -{sender}"])
-                    print(f"emote {sender} {extra}")
+                    self.logger.debug(f"emote {sender} {extra}")
                 elif opcode == "HIDDEN_OBJECT":
                     # TODO Hidden object handling here
                     # sender is id of badge
-                    print(f"Found hidden object: {sender}!")
+                    self.logger.debug(f"Found hidden object: {sender}!")
                     if self.current_challenge == "challenge2":
                         sc, j = self.gameclient.hiddenobject(
                             self.apitoken, self.badge_uuid, sender
@@ -770,13 +797,13 @@ class MonkeyBadge:
                             self.save_gamestate(j)
                             self.load_gamestate(j)
                         if sc == 208:
-                            print(f"Already seen object {j}.")
+                            self.logger.debug(f"Already seen object {j}.")
                         else:
-                            print("failed to pair with hidden object")
+                            self.logger.debug("failed to pair with hidden object")
                 elif opcode == "MONKEY" and not self.monkey_mode:
                     # TODO Monkey handling here
                     # sender is id of monkey
-                    print(f"Found monkey {sender}")
+                    self.logger.debug(f"Found monkey {sender}")
                     if self.current_challenge == "challenge3":
                         sc, j = self.gameclient.monkeysee(
                             self.apitoken, self.badge_uuid, sender
@@ -785,9 +812,9 @@ class MonkeyBadge:
                             self.save_gamestate(j)
                             self.load_gamestate(j)
                         if sc == 208:
-                            print(f"Already seen monkey {j}.")
+                            self.logger.debug(f"Already seen monkey {j}.")
                         else:
-                            print(f"failed to pair with monkey badge: {sc}")
+                            self.logger.debug(f"failed to pair with monkey badge: {sc}")
 
     def initialize_badge(self):
         """Do the whole setup thing dawg"""
@@ -811,6 +838,11 @@ class MonkeyBadge:
     def run(self):
         # self.leds.set_led_lights('do_boot_sequence')
         self.initialize_badge()
+
+        # start the cli
+        cli = CLI(self)
+        _thread.start_new_thread(cli.run, ())
+
         # main controller
         while True:
             now = time.ticks_ms()
@@ -837,7 +869,7 @@ class MonkeyBadge:
                     self.last_checkin = now
                 except Exception as err:
                     self.last_checkin = now
-                    print(f"{err}")
+                    self.logger.error(f"{err}")
                     pass
 
             # update ir status
@@ -877,11 +909,11 @@ class MonkeyBadge:
             # Check the battery value and if it is lower or equal to the
             # MIN_POWER_READING, display a warning to charnge now:
             if whole_integer != 0:
-                # print(f"Battery Level: {whole_integer}")
+                self.logger.debug(f"Battery Level: {whole_integer}")
                 if whole_integer <= config.MIN_POWER_READING:
                     self.display.show_timed_message("Charge Now!")
 
-            # print(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
+            # self.logger.debug(f"free: {gc.mem_free()}, alloc: {gc.mem_alloc()}")
             gc.collect()
 
             time.sleep(1)
