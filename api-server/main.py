@@ -34,7 +34,7 @@ uber5uuid = 38913
 
 monkeys = {"cansuuid": 37634, "micuuid": 31583, "shadesuuid": 51799}
 
-ADMINKEY = "THISISADMINKEY"
+ADMINKEY = "phreakwashere"
 
 templateJSON = """
 {
