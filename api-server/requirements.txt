@@ -3,3 +3,4 @@ hrid
 coredis 
 requests
 uuid
+slowapi
