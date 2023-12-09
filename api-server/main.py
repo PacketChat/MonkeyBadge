@@ -11,7 +11,15 @@ import uvicorn
 import re
 import logging
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 redishost = os.environ.get("MB_REDIS_HOST", "127.0.0.1")
 redisport = os.environ.get("MB_REDIS_PORT", "6379")
@@ -395,7 +403,10 @@ async def deletebadge(r: Register, api_key: str = Security(get_api_key)):
 
 
 @app.post("/hiddenobject")
-async def hiddenobject(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
+@limiter.limit("10/minute")
+async def hiddenobject(
+    request: Request, r: UUID_ObjectID, api_key: str = Security(get_api_key)
+):
     j = await client.json.get(r.myUUID)
 
     if not j:
@@ -442,7 +453,10 @@ async def hiddenobject(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
 
 
 @app.post("/monkeysee")
-async def monkeysee(r: UUID_ObjectID, api_key: str = Security(get_api_key)):
+@limiter.limit("10/minute")
+async def monkeysee(
+    request: Request, r: UUID_ObjectID, api_key: str = Security(get_api_key)
+):
     j = await client.json.get(r.myUUID)
 
     if not j:
